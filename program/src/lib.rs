@@ -1,6 +1,6 @@
 
 
-mod entrypoint;
+pub mod entrypoint;
 pub mod instruction;
 mod error;
 
