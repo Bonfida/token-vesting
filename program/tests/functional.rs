@@ -14,6 +14,7 @@ async fn test_token_vesting() {
     let program_id = Pubkey::new_unique();
     let source_pubkey = Pubkey::new_unique();
     let destination_pubkey = Pubkey::new_unique();
+    let transaction_pubkey = Pubkey::create_program_address(&[&[42, 42]], &program_id).unwrap();
 
     let mut program_test = ProgramTest::new(
         "token_vesting",
@@ -52,6 +53,8 @@ async fn test_token_vesting() {
     msg!("Packed instruction data: {:?}", instruction_data);
 
     let accounts = vec![
+        AccountMeta::new(program_id, false),
+        AccountMeta::new(transaction_pubkey, false),
         AccountMeta::new(source_pubkey, false),
         AccountMeta::new(destination_pubkey, false),
     ];
