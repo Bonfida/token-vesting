@@ -2,10 +2,10 @@ use num_derive::FromPrimitive;
 use solana_program::{decode_error::DecodeError, program_error::ProgramError};
 use thiserror::Error;
 
-/// Errors that may be returned by the Token program.
+/// Errors that may be returned by the Token vesting program.
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum VestingError {
-    /// Lamport balance below rent-exempt threshold.
+    // Invalid instruction
     #[error("Invalid Instruction")]
     InvalidInstruction
 }
