@@ -1,7 +1,7 @@
 
 
 mod entrypoint;
-mod instruction;
+pub mod instruction;
 mod error;
 
 pub mod processor;
