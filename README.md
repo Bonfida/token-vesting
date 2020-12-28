@@ -15,3 +15,8 @@
 - `cli` : CLI tool to interact with on-chain token vesting contract
 - `js` : JavaScript binding to interact with on-chain token vesting contract
 - `program` : The BPF compatible token vesting on-chain program/smart contract
+  
+## TODO: Open issues for the following bugs
+
+- `Instruction::new` serializes vector data wrongly (adds vector length as prefix to byte array)
+- `solana-program-test/lib.rs` - `invoke_signed` - Order of accounts matters. Writability is either not checked or falsely assumed for system program.
