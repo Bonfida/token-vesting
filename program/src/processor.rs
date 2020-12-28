@@ -1,10 +1,11 @@
 use solana_program::{
-    entrypoint::ProgramResult, 
-    pubkey::Pubkey, 
     account_info::{AccountInfo, next_account_info},
-    msg,
+    decode_error::DecodeError,
+    entrypoint::ProgramResult,
+    msg, 
     program_error::{PrintProgramError},
-    decode_error::DecodeError
+    pubkey::Pubkey,
+    sysvar::{Sysvar, clock::Clock}
 };
 use num_traits::FromPrimitive;
 
@@ -26,6 +27,20 @@ impl Processor {
     }
 
     pub fn process_unlock(_accounts: &[AccountInfo]) -> ProgramResult {
+        let accounts_iter = &mut _accounts.iter();
+        let programm_account = next_account_info(accounts_iter)?;
+        let receiver_account = next_account_info(accounts_iter)?;
+
+        // Good structure for handling accounts (repack after):
+        // let mut source_account = Account::unpack(&source_account_info.data.borrow())?;
+
+        let clock = &Clock::from_account_info(programm_account)?; // Is this the right clock??
+
+        if clock.slot > 3 { //TODO get the slot_height from the Vesting Schedule (master) contract
+            **receiver_account.try_borrow_mut_lamports()? += **programm_account.try_borrow_mut_lamports()?;
+            **programm_account.try_borrow_mut_lamports()? = 0;
+        }
+
         Ok(())
     }
 
