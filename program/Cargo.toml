@@ -16,6 +16,7 @@ thiserror = "1.0.23"
 num-traits = "0.2"
 num-derive = "0.3"
 arrayref = "0.3.6"
+spl-token = "3.0.1"
 
 [dev-dependencies]
 solana-program-test = "1.5.0"
