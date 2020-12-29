@@ -1,3 +1,4 @@
+#![cfg(feature = "test-bpf")]
 use solana_program::{instruction::{AccountMeta, Instruction}, msg, pubkey::Pubkey, rent::Rent, system_program};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::{signature::Signer, transaction::Transaction, account::Account};
