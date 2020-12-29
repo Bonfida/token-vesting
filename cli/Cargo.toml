@@ -1,5 +1,5 @@
 [package]
-name = "cli"
+name = "vesting-contract-cli"
 version = "0.1.0"
 authors = ["Elliott Benisty <elliott@causalens.com>"]
 edition = "2018"
@@ -7,3 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+solana-program = "1.5.0"
+solana-client = "1.5.0"
+solana-sdk = "1.5.0"
+solana-clap-utils = "1.5.0"
+token-vesting =  { version = "0.1.0", path="../program" }
+clap = "2.33.3"
