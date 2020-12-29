@@ -22,19 +22,14 @@ fn command_create_svc(
     // Find the non reversible public key for the vesting contract via the seed    
     let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
     vesting_seed[31] = bump;
-    
-    
-    let lock_accounts = vec![ 
-        AccountMeta::new(system_program::id(),false),
+    msg!("Vesting account pubkey: {:?}", vesting_pubkey);
+
+    let init_accounts = vec![ 
         AccountMeta::new(program_id, false),
+        AccountMeta::new(system_program::id(),false),
+        AccountMeta::new(vesting_pubkey,false),
         AccountMeta::new(source_pubkey.pubkey(), false),
         AccountMeta::new(destination_pubkey, false),
-        AccountMeta::new(vesting_pubkey,false),
-    ];
-    
-    let init_accounts = vec![ 
-        AccountMeta::new(system_program::id(), false),
-        AccountMeta::new(vesting_pubkey, false)
     ];
     
 
@@ -45,18 +40,54 @@ fn command_create_svc(
         mint_address: Pubkey::new_unique()
     }.pack();
     
-    let lock_instruction_data = VestingInstruction::Lock{
-        seeds: vesting_seed.clone(),
-        amount: vesting_amount,
-        release_height: 0,
-        mint_address: Pubkey::new_unique()
-    }.pack();
-    msg!("Packed instruction data: {:?}", lock_instruction_data);
+    msg!("Packed instruction data: {:?}", init_instruction_data);
     
 
     let instructions = [
         Instruction { program_id: program_id, accounts: init_accounts, data: init_instruction_data },
-        Instruction { program_id: program_id, accounts: lock_accounts, data: lock_instruction_data }
+    ];
+
+    let mut transaction = Transaction::new_with_payer(
+        &instructions,
+        Some(&source_pubkey.pubkey()),
+    );
+
+    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    transaction.sign(&[&source_pubkey], recent_blockhash);
+
+    rpc_client.send_transaction(&transaction).unwrap();
+}
+
+fn command_unlock_svc(
+    rpc_client: RpcClient,
+    program_id: Pubkey,
+    mut vesting_seed: [u8;32],
+    source_pubkey: Keypair,
+    destination_pubkey: Pubkey,
+    vesting_amount: u64
+) {
+    // Find the non reversible public key for the vesting contract via the seed    
+    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
+    vesting_seed[31] = bump;
+    msg!("Vesting account pubkey: {:?}", vesting_pubkey);
+
+    let unlock_accounts = vec![ 
+        AccountMeta::new(program_id, false),
+        AccountMeta::new(system_program::id(),false),
+        AccountMeta::new(vesting_pubkey,false),
+        AccountMeta::new(destination_pubkey, false),
+    ];
+    
+
+    let unlock_instruction_data = VestingInstruction::Unlock{
+        seeds: vesting_seed.clone(),
+    }.pack();
+    
+    msg!("Packed instruction data: {:?}", unlock_instruction_data);
+    
+
+    let instructions = [
+        Instruction { program_id: program_id, accounts: unlock_accounts, data: unlock_instruction_data },
     ];
 
     let mut transaction = Transaction::new_with_payer(
@@ -154,6 +185,55 @@ fn main() {
                     ),
             )
         )
+        .subcommand(SubCommand::with_name("unlock-svc").about("Unlock a simple vesting contract")        
+        .arg(
+            Arg::with_name("seed")
+                .long("seed")
+                .value_name("ADDRESS")
+                // .validator(is_hash)
+                .takes_value(true)
+                .help(
+                    "Specify the seed for the vesting contract. \
+                    This may be a keypair file, the ASK keyword. \
+                    Defaults to the client keypair.",
+                ),
+        )        
+        .arg(
+            Arg::with_name("source")
+                .long("source")
+                .value_name("KEYPAIR")
+                .validator(is_keypair)
+                .takes_value(true)
+                .help(
+                    "Specify the source account owner. \
+                    This may be a keypair file, the ASK keyword. \
+                    Defaults to the client keypair.",
+                ),
+        )
+        .arg(
+            Arg::with_name("destination")
+                .long("destination")
+                .value_name("ADDRESS")
+                .validator(is_pubkey)
+                .takes_value(true)
+                .help(
+                    "Specify the destination account address. \
+                    This may be a keypair file, the ASK keyword. \
+                    Defaults to the client keypair.",
+                ),
+        )        
+        .arg(
+            Arg::with_name("amount")
+                .long("amount")
+                .value_name("AMOUNT")
+                .validator(is_amount)
+                .takes_value(true)
+                .help(
+                    "Amount in SOL to transfer via the vesting \
+                    contract.",
+                ),
+        )
+    )
         .get_matches();
 
     let rpc_url = value_t!(matches, "rpc_url", String)
@@ -177,6 +257,25 @@ fn main() {
             msg!("Destination Pubkey: {:?}", &destination_pubkey);
             msg!("Vesting Amount: {:?}", &vesting_amount);
             command_create_svc(
+                rpc_client,
+                program_id,
+                vesting_seed,
+                source_pubkey,
+                destination_pubkey,
+                vesting_amount
+            )
+        }
+        ("unlock-svc", Some(arg_matches)) => {
+            let vesting_seed = (*String::as_bytes(&value_of(arg_matches, &"seed").unwrap())).try_into().unwrap();
+            let source_pubkey = keypair_of(arg_matches, "source").unwrap();
+            let destination_pubkey = pubkey_of(arg_matches, "destination").unwrap();
+            let vesting_amount = lamports_of_sol(arg_matches, "amount").unwrap();
+            msg!("Program ID: {:?}", &program_id);
+            msg!("Vesting Seed: {:?}", &vesting_seed);
+            msg!("Source Pubkey: {:?}", &source_pubkey);
+            msg!("Destination Pubkey: {:?}", &destination_pubkey);
+            msg!("Vesting Amount: {:?}", &vesting_amount);
+            command_unlock_svc(
                 rpc_client,
                 program_id,
                 vesting_seed,

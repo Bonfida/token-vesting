@@ -176,7 +176,6 @@ impl Processor {
         let vesting_account = next_account_info(accounts_iter)?;
         let receiver_account = next_account_info(accounts_iter)?;
 
-
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
         if vesting_account_key != *vesting_account.key {
             return Err(ProgramError::InvalidArgument)
@@ -195,6 +194,7 @@ impl Processor {
             **receiver_account.try_borrow_mut_lamports()? += **vesting_account.try_borrow_lamports()?;
             **vesting_account.try_borrow_mut_lamports()? = 0;
         }
+        
         Ok(())
     }
 
