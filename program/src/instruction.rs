@@ -30,9 +30,9 @@ impl VestingInstruction {
 
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         use VestingError::InvalidInstruction;
-        msg!("Received : {:?}", input);
+        // msg!("Received : {:?}", input);
         let (&tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
-        msg!("Parsed tag : {:?}", tag);
+        // msg!("Parsed tag : {:?}", tag);
         Ok(match tag {
             0 | 1 => {
                 let seeds:[u8; 32] = rest
@@ -43,7 +43,7 @@ impl VestingInstruction {
                     .and_then(|slice| slice.try_into().ok())
                     .map(u64::from_le_bytes)
                     .ok_or(InvalidInstruction)?;
-                msg!("Parsed amount");
+                // msg!("Parsed amount");
                 let release_height = rest
                 .get(40..48)
                 .and_then(|slice| slice.try_into().ok())
@@ -55,7 +55,7 @@ impl VestingInstruction {
                 .and_then(|slice| slice.try_into().ok())
                 .map(Pubkey::new)
                 .ok_or(InvalidInstruction)?;
-                msg!("Parsed release_height");
+                // msg!("Parsed release_height");
                 match tag {
                     0 => Self::Init { seeds , amount, release_height, mint_address },
                     1 => Self::Lock { seeds , amount, release_height, mint_address },
