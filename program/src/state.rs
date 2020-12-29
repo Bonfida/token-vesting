@@ -42,3 +42,26 @@ impl VestingState {
         Ok(Self {destination_address, mint_address, release_height})
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{VestingState, STATE_SIZE};
+    use solana_program::pubkey::Pubkey;
+
+    #[test]
+    fn test_state_packing(){
+        let state = VestingState{
+            destination_address: Pubkey::new_unique(),
+            mint_address: Pubkey::new_unique(),
+            release_height: 30767976
+        };
+        let packed = Vec::from(state.pack());
+        let mut expected = Vec::with_capacity(STATE_SIZE);
+        expected.extend_from_slice(&state.destination_address.to_bytes());
+        expected.extend_from_slice(&state.mint_address.to_bytes());
+        expected.extend_from_slice(&state.release_height.to_le_bytes());
+
+        assert_eq!(expected, packed);
+        assert_eq!(packed.len(), STATE_SIZE);
+    }
+}
