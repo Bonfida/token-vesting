@@ -40,13 +40,17 @@ async fn test_token_vesting() {
 
     
     let init_instruction_data = VestingInstruction::Init{
-        seeds: seeds.clone()
+        seeds: seeds.clone(),
+        amount: 5,
+        release_height: 0,
+        mint_address: Pubkey::new_unique()
     }.pack();
     
     let lock_instruction_data = VestingInstruction::Lock{
         seeds: seeds.clone(),
         amount: 5,
-        release_height: 0
+        release_height: 0,
+        mint_address: Pubkey::new_unique()
     }.pack();
     
     msg!("Packed instruction data: {:?}", lock_instruction_data);
@@ -62,13 +66,16 @@ async fn test_token_vesting() {
     ];
 
     let init_accounts = vec![
+        AccountMeta::new(program_id, false),
         AccountMeta::new(system_program::id(), false),
         AccountMeta::new(transaction_pubkey, false),
+        AccountMeta::new(payer.pubkey(), true),
+        AccountMeta::new(destination_pubkey, false),
     ];
 
     let instructions = [
         Instruction { program_id: program_id, accounts: init_accounts, data: init_instruction_data },
-        Instruction { program_id: program_id, accounts: lock_accounts, data: lock_instruction_data }
+        // Instruction { program_id: program_id, accounts: lock_accounts, data: lock_instruction_data }
         ];
 
     
