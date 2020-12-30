@@ -9,11 +9,10 @@ use solana_program::{
     system_instruction::{allocate, assign},
     sysvar::{Sysvar, clock::Clock}
 };
-
+use spl_token::instruction::TokenInstruction;
 use spl_token::instruction::transfer;
 
 use spl_associated_token_account::get_associated_token_address;
-
 use num_traits::FromPrimitive;
 
 use crate::{
@@ -21,12 +20,6 @@ use crate::{
     instruction::{self, VestingInstruction}, 
     state::{VestingState, STATE_SIZE}
 };
-
-// fn get_associated_token_address(account: &Pubkey, mint: &Pubkey) -> Result<Pubkey, ProgramError> {
-//     Ok(Pubkey::create_program_address(
-//         &[&account.to_bytes(), &spl_token::id().to_bytes(), &mint.to_bytes()], &spl_token::id()
-//     )?)
-// }
 
 pub struct Processor {}
 
@@ -187,15 +180,6 @@ impl Processor {
         //     ],
         //     &[]
         // )?;
-
-        invoke(
-            &instruction,
-            &[
-                source_account.clone(),
-                destination_account.clone(),
-                vesting_account.clone()
-            ]
-        )?;
             Ok(())
     }
 
@@ -227,7 +211,7 @@ impl Processor {
 
 
         invoke_signed(
-            &transfer(vesting_account.key, receiver_account.key, amount),
+            &transfer(vesting_account.key, receiver_account.key, amount)?,
             &[
                 system_account.clone(),
                 vesting_account.clone(),
@@ -236,14 +220,10 @@ impl Processor {
             &[&[&seeds]]
         )?;
 
-<<<<<<< HEAD
-        if clock.slot > state.release_height {
-            **receiver_account.try_borrow_mut_lamports()? += **vesting_account.try_borrow_lamports()?;
-            **vesting_account.try_borrow_mut_lamports()? = 0;
-        }
-        
-=======
->>>>>>> 8e61493 (F)
+        // if clock.slot > state.release_height {
+        //     **receiver_account.try_borrow_mut_lamports()? += **vesting_account.try_borrow_lamports()?;
+        //     **vesting_account.try_borrow_mut_lamports()? = 0;
+        // }
         Ok(())
     }
 
