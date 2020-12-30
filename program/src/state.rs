@@ -2,16 +2,17 @@ use solana_program::{pubkey::Pubkey, program_error::ProgramError};
 
 use std::convert::TryInto;
 
-pub const STATE_SIZE:usize = 72;
+pub const STATE_SIZE:usize = 73;
 
-pub struct VestingState {
+pub struct VestingParameters {
     // A destination token address
     pub destination_address : Pubkey,
     pub mint_address : Pubkey,
     pub release_height: u64,
+    pub is_initialized: bool
 }
 
-impl VestingState {
+impl VestingParameters {
     pub fn pack_into(&self, target: &mut [u8;STATE_SIZE]){
         let destination_address_bytes = self.destination_address.to_bytes();
         let mint_address_bytes = self.mint_address.to_bytes();
@@ -27,6 +28,7 @@ impl VestingState {
         for i in 64..72 {
             target[i] = release_height_bytes[i-64];
         }
+        target[72] = self.is_initialized as u8;
     }
 
     pub fn pack(&self) -> [u8;STATE_SIZE]{
@@ -38,28 +40,31 @@ impl VestingState {
     pub fn unpack(input: &[u8])-> Result<Self, ProgramError>{
         let destination_address = Pubkey::new(&input[..32]);
         let mint_address = Pubkey::new(&input[32..64]);
-        let release_height = u64::from_le_bytes(input[64..].try_into().unwrap());
-        Ok(Self {destination_address, mint_address, release_height})
+        let release_height = u64::from_le_bytes(input[64..72].try_into().unwrap());
+        let is_initialized = input[72] == 1;
+        Ok(Self {destination_address, mint_address, release_height, is_initialized})
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{VestingState, STATE_SIZE};
+    use super::{VestingParameters, STATE_SIZE};
     use solana_program::pubkey::Pubkey;
 
     #[test]
     fn test_state_packing(){
-        let state = VestingState{
+        let state = VestingParameters{
             destination_address: Pubkey::new_unique(),
             mint_address: Pubkey::new_unique(),
-            release_height: 30767976
+            release_height: 30767976,
+            is_initialized: true
         };
         let packed = Vec::from(state.pack());
         let mut expected = Vec::with_capacity(STATE_SIZE);
         expected.extend_from_slice(&state.destination_address.to_bytes());
         expected.extend_from_slice(&state.mint_address.to_bytes());
         expected.extend_from_slice(&state.release_height.to_le_bytes());
+        expected[STATE_SIZE-1] = state.is_initialized as u8;
 
         assert_eq!(expected, packed);
         assert_eq!(packed.len(), STATE_SIZE);
