@@ -1,23 +1,19 @@
 use solana_program::{
     account_info::{AccountInfo, next_account_info}, 
     decode_error::DecodeError, entrypoint::ProgramResult, 
-    instruction::{AccountMeta, Instruction}, 
     msg, program::{invoke, invoke_signed}, 
     program_error::ProgramError, 
     program_error::{PrintProgramError}, 
     pubkey::Pubkey,
-    system_instruction::{allocate, assign},
-    sysvar::{Sysvar, clock::Clock}
 };
-use spl_token::instruction::TokenInstruction;
-use spl_token::instruction::{transfer, initialize_account};
+use spl_token::instruction::transfer;
 
 use spl_associated_token_account::get_associated_token_address;
 use num_traits::FromPrimitive;
 
 use crate::{
     error::VestingError, 
-    instruction::{self, VestingInstruction}, 
+    instruction::VestingInstruction, 
     state::{VestingParameters, STATE_SIZE}
 };
 
@@ -121,7 +117,7 @@ impl Processor {
 
         //TODO put vesting and vesting token together
         let spl_token_account = next_account_info(accounts_iter)?;
-        let mint_account = next_account_info(accounts_iter)?;
+        // let mint_account = next_account_info(accounts_iter)?;
         let vesting_account = next_account_info(accounts_iter)?;
         let vesting_token_account = next_account_info(accounts_iter)?;
         let source_token_account_owner = next_account_info(accounts_iter)?;
@@ -299,12 +295,12 @@ impl PrintProgramError for VestingError {
     }
 }
 
-// #[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    // #[test]
-    fn test_lock(){
+    #[test]
+    fn test_create(){
 
         let mut seeds = [42u8;32];
 
@@ -326,7 +322,7 @@ mod tests {
         let mut transaction_data = [0u8;STATE_SIZE];
 
 
-        let accounts = vec![
+        let _accounts = vec![
             AccountInfo::new(
                 &program_id,
                 true,
@@ -371,7 +367,7 @@ mod tests {
         // Processor::process_instruction(
         //     &program_id,
         //     &accounts,
-        //     &VestingInstruction::Lock {seeds, amount: 5, release_height: 0, mint_address}.pack()
+        //     &VestingInstruction::Create {seeds, amount: 5, release_height: 0, mint_address: Pubkey::new_unique()}.pack()
         // ).unwrap();
         // assert_eq!(source_lamports, 37);
         // assert_eq!(transaction_lamports, 5);
