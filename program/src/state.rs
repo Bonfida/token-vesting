@@ -64,7 +64,7 @@ mod tests {
         expected.extend_from_slice(&state.destination_address.to_bytes());
         expected.extend_from_slice(&state.mint_address.to_bytes());
         expected.extend_from_slice(&state.release_height.to_le_bytes());
-        expected[STATE_SIZE-1] = state.is_initialized as u8;
+        expected.extend_from_slice(&[state.is_initialized as u8]);
 
         assert_eq!(expected, packed);
         assert_eq!(packed.len(), STATE_SIZE);
