@@ -5,7 +5,7 @@ use solana_program::{
     msg, program::{invoke, invoke_signed}, 
     program_error::ProgramError, 
     program_error::{PrintProgramError}, 
-    pubkey::Pubkey, 
+    pubkey::Pubkey,
     system_instruction::{allocate, assign},
     sysvar::{Sysvar, clock::Clock}
 };
@@ -119,16 +119,19 @@ impl Processor {
     ) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 
+        //TODO put vesting and vesting token together
+        let spl_token_account = next_account_info(accounts_iter)?;
+        let mint_account = next_account_info(accounts_iter)?;
         let vesting_account = next_account_info(accounts_iter)?;
         let vesting_token_account = next_account_info(accounts_iter)?;
         let source_token_account_owner = next_account_info(accounts_iter)?;
         let source_token_account = next_account_info(accounts_iter)?;
         let destination_token_account = next_account_info(accounts_iter)?;
 
-        if !vesting_account.is_signer {
-            msg!("This instruction is private");
-            return Err(ProgramError::MissingRequiredSignature)
-        }
+        // if !vesting_account.is_signer {
+        //     msg!("This instruction is private");
+        //     return Err(ProgramError::MissingRequiredSignature)
+        // }
 
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
         if vesting_account_key != *vesting_account.key {
@@ -141,11 +144,12 @@ impl Processor {
             return Err(ProgramError::InvalidArgument)
         }
 
-        if *vesting_account.owner != *program_id{
+        if *vesting_account.owner != *program_id {
             msg!("Program should own vesting account");
             return Err(ProgramError::InvalidArgument)
         }
 
+        // Verifying that no SVC was already created with this seed
         let is_initialized = vesting_account.try_borrow_data()?[STATE_SIZE-1] == 1;
 
         if is_initialized {
@@ -176,16 +180,16 @@ impl Processor {
         }
 
         if *source_token_account.key != source_token_account_address {
-            msg!("Invalid vesting token account provided");
+            msg!("Invalid source token account provided");
             return Err(ProgramError::InvalidArgument)
         }
 
         let transfer_tokens_to_vesting_account = transfer(
-            &spl_token::id(),
+            &spl_token_account.key,
             &source_token_account_address,
             &vesting_token_account_address,
-            &mint_address,
-            &[source_token_account_owner.key],
+            &source_token_account_owner.key, //mint_account.key
+            &[],
             amount
         )?;
 
@@ -193,8 +197,10 @@ impl Processor {
             &transfer_tokens_to_vesting_account,
             &[
                 source_token_account.clone(),
-                vesting_token_account.clone(),
-                source_token_account_owner.clone()
+                vesting_token_account.clone(),  
+                // mint_account.clone(),
+                source_token_account_owner.clone(),
+                spl_token_account.clone()
             ]
         )?;
         Ok(())
@@ -205,7 +211,7 @@ impl Processor {
         
         let vesting_account = next_account_info(accounts_iter)?;
         let vesting_token_account = next_account_info(accounts_iter)?;
-        let receiver_token_account = next_account_info(accounts_iter)?;
+        let destination_token_account = next_account_info(accounts_iter)?;
 
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
 
@@ -215,10 +221,10 @@ impl Processor {
         }
 
         
-        let packed_state = vesting_token_account.try_borrow_data()?;
+        let packed_state = vesting_account.try_borrow_data()?;
         let state = VestingParameters::unpack(packed_state.as_ref())?;
         
-        if state.destination_address != *receiver_token_account.key {
+        if state.destination_address != *destination_token_account.key {
             msg!("Contract destination account does not matched provided account");
             return Err(ProgramError::InvalidArgument)
         }
@@ -236,7 +242,7 @@ impl Processor {
         let transfer_tokens_from_vesting_account = transfer(
             &spl_token::id(),
             &vesting_token_account_key,
-            receiver_token_account.key,
+            destination_token_account.key,
             &state.mint_address,
             &[&vesting_account.key],
             amount
@@ -247,7 +253,7 @@ impl Processor {
             &transfer_tokens_from_vesting_account,
             &[
                 vesting_token_account.clone(),
-                receiver_token_account.clone(),
+                destination_token_account.clone(),
                 vesting_account.clone()
             ],
             &[&[&seeds]]
