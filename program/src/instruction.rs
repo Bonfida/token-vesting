@@ -1,6 +1,6 @@
 use crate::error::VestingError;
 
-use solana_program::{program_error::ProgramError, msg, pubkey::Pubkey};
+use solana_program::{program_error::ProgramError, pubkey::Pubkey};
 
 use std::mem::size_of;
 use std::convert::TryInto;

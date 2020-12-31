@@ -1,18 +1,14 @@
 #![cfg(feature = "test-bpf")]
 use solana_program::{
     instruction::{AccountMeta, Instruction},
-    msg,
     pubkey::Pubkey,
-    rent::Rent,
-    system_program};
+    rent::Rent};
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::{signature::Signer, transaction::Transaction, account::Account, signature::Keypair};
 use token_vesting::entrypoint::process_instruction;
 use token_vesting::instruction::VestingInstruction;
 use token_vesting::state::STATE_SIZE;
 use spl_associated_token_account::get_associated_token_address;
-use std::str::FromStr;
-
 
 #[tokio::test]
 async fn test_token_vesting() {
@@ -92,9 +88,9 @@ async fn test_token_vesting() {
         release_height: 0,
         mint_address: mint_address
     }.pack();
-    let unlock_instruction_data = VestingInstruction::Unlock{
-        seeds: seeds.clone()
-    }.pack();
+    // let unlock_instruction_data = VestingInstruction::Unlock{
+    //     seeds: seeds.clone()
+    // }.pack();
     
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -130,6 +126,6 @@ async fn test_token_vesting() {
     banks_client.process_transaction(transaction).await.unwrap();
 }
 
-fn intialize_token_account(owner: Pubkey, mint_address: Pubkey){
+// fn intialize_token_account(owner: Pubkey, mint_address: Pubkey){
     
-}
+// }
