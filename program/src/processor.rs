@@ -5,6 +5,7 @@ use solana_program::{
     program_error::ProgramError, 
     program_error::{PrintProgramError}, 
     pubkey::Pubkey,
+    sysvar::{clock::Clock, Sysvar},
 };
 use spl_token::instruction::transfer;
 
@@ -12,7 +13,7 @@ use spl_associated_token_account::get_associated_token_address;
 use num_traits::FromPrimitive;
 
 use crate::{
-    error::VestingError, 
+    error::VestingError,
     instruction::VestingInstruction, 
     state::{VestingParameters, STATE_SIZE}
 };
@@ -157,6 +158,7 @@ impl Processor {
             destination_address: destination_token_account.key.clone(), 
             release_height, 
             mint_address: mint_address,
+            amount,
             is_initialized: true
         };
 
@@ -197,7 +199,7 @@ impl Processor {
                 // mint_account.clone(),
                 source_token_account_owner.clone(),
                 spl_token_account.clone()
-            ]
+            ] //seed?
         )?;
         Ok(())
     }
@@ -205,6 +207,8 @@ impl Processor {
     pub fn process_unlock(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32], ) -> ProgramResult {
         let accounts_iter = &mut _accounts.iter();
         
+        let clock_sysvar_account = next_account_info(accounts_iter)?;
+        let spl_token_account = next_account_info(accounts_iter)?;
         let vesting_account = next_account_info(accounts_iter)?;
         let vesting_token_account = next_account_info(accounts_iter)?;
         let destination_token_account = next_account_info(accounts_iter)?;
@@ -215,7 +219,6 @@ impl Processor {
             msg!("Invalid vesting account key");
             return Err(ProgramError::InvalidArgument)
         }
-
         
         let packed_state = vesting_account.try_borrow_data()?;
         let state = VestingParameters::unpack(packed_state.as_ref())?;
@@ -226,39 +229,40 @@ impl Processor {
         }
         
         let vesting_token_account_key = get_associated_token_address(&vesting_account_key, &state.mint_address);
-        // let clock = &Clock::from_account_info(vesting_account)?;
-
+        
         if vesting_token_account_key != *vesting_token_account.key{
             msg!("Vesting token account does not match the provided vesting contract");
             return Err(ProgramError::InvalidArgument)
         }
 
-        let amount= **vesting_token_account.try_borrow_lamports()?;
-
+        // Check that sufficient slots have passed to unlock
+        let clock = Clock::from_account_info(&clock_sysvar_account)?;
+        if clock.slot < state.release_height {
+            msg!("Vesting contract has not yet reached release time");
+            return Err(ProgramError::InvalidArgument)
+        }
+        
         let transfer_tokens_from_vesting_account = transfer(
-            &spl_token::id(),
+            &spl_token_account.key,
             &vesting_token_account_key,
             destination_token_account.key,
             &state.mint_address,
             &[&vesting_account.key],
-            amount
+            state.amount                                //spl_token::state:: vesting_token_account ?? OR handle in CLI
         )?;
-
-
+        
+        
         invoke_signed(
             &transfer_tokens_from_vesting_account,
             &[
                 vesting_token_account.clone(),
                 destination_token_account.clone(),
-                vesting_account.clone()
-            ],
-            &[&[&seeds]]
-        )?;
-
-        // if clock.slot > state.release_height {
-        //     **receiver_account.try_borrow_mut_lamports()? += **vesting_account.try_borrow_lamports()?;
-        //     **vesting_account.try_borrow_mut_lamports()? = 0;
-        // }
+                vesting_account.clone(),
+                spl_token_account.clone()
+                ],
+                &[&[&seeds]]
+            )?;
+            
         Ok(())
     }
 
