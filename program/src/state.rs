@@ -31,10 +31,10 @@ impl VestingParameters {
             target[i] = release_height_bytes[i-64];
         }
 
-        for i in 72..64 {
-            target[i] = amount_bytes[i-64];
+        for i in 72..80 {
+            target[i] = amount_bytes[i-72];
         }
-        target[72] = self.is_initialized as u8;
+        target[80] = self.is_initialized as u8;
     }
 
     pub fn pack(&self) -> [u8;STATE_SIZE]{
@@ -64,7 +64,7 @@ mod tests {
             destination_address: Pubkey::new_unique(),
             mint_address: Pubkey::new_unique(),
             release_height: 30767976,
-            amount: 500,
+            amount: 30767976,
             is_initialized: true
         };
         let packed = Vec::from(state.pack());

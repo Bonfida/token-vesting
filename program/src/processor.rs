@@ -18,6 +18,7 @@ use crate::{
     state::{VestingParameters, STATE_SIZE}
 };
 
+
 pub struct Processor {}
 
 impl Processor {
@@ -248,9 +249,8 @@ impl Processor {
             destination_token_account.key,
             &state.mint_address,
             &[&vesting_account.key],
-            state.amount                                //spl_token::state:: vesting_token_account ?? OR handle in CLI
+            state.amount                            //Could be done in cli
         )?;
-        
         
         invoke_signed(
             &transfer_tokens_from_vesting_account,
@@ -275,10 +275,6 @@ impl Processor {
                 msg!("Instruction: Create");
                 Self::process_create(program_id, accounts, seeds, amount, release_height, mint_address)
             }
-            // VestingInstruction::CreatePrivate { seeds, amount, release_height, mint_address} => {
-            //     msg!("Instruction: Lock");
-            //     Self::process_lock(program_id, accounts, seeds, amount, release_height, mint_address)
-            // }
             VestingInstruction::Unlock {seeds} => {
                 msg!("Instruction: Unlock");
                 Self::process_unlock(program_id, accounts, seeds)
