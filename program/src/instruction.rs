@@ -24,33 +24,29 @@ pub enum VestingInstruction {
         release_height: u64,
         mint_address: Pubkey
     },
-    /// Creates a new simple vesting contract (SVC) - can only be invoked by the program itself
-    ///
-    /// Accounts expected by this instruction:
-    ///
-    ///   * Single owner
-    ///   0. `[]` The vesting account.
-    ///   1. `[writable]` The vesting spl-token account
-    ///   2. `[signer]` The source spl-token account owner.
-    ///   3. `[writable]` The source spl-token account
-    ///   4. `[]` The destination spl-token account
-    // CreatePrivate {
-    //     seeds: [u8; 32],
-    //     amount: u64,
-    //     release_height: u64,
-    //     mint_address: Pubkey
-    // },
 
     // /// Unlocks a simple vesting contract (SVC) - can only be invoked by the program itself
-    // ///
+    // /// TODO only program ?
     // /// Accounts expected by this instruction:
     // ///
     // ///   * Single owner
     // ///   0. `[]` The vesting account.
     // ///   1. `[writable]` The vesting spl-token account.
-    // ///   2. `[writable]` The destination spl-token account
-    // ///   3. `[]` The vesting account
+    // ///   2. `[writable]` The destination spl-token account.
     Unlock {
+        seeds: [u8; 32]
+    },
+
+    // /// Change the destination account of a given simple vesting contract (SVC)
+    // /// - can only be invoked by the present destination address of the contract.
+    // ///
+    // /// Accounts expected by this instruction:
+    // ///
+    // ///   * Single owner
+    // ///   0. `[]` The vesting account.
+    // ///   1. `[signer]` The destination spl-token account owner.
+    // ///   2. `[]` The new destination spl-token account.
+    ChangeDestination {
         seeds: [u8; 32]
     }
 }
@@ -98,6 +94,11 @@ impl VestingInstruction {
                     .get(..32)
                     .and_then(|slice| slice.try_into().ok()).unwrap();
                 Self::Unlock { seeds }},
+            3 => {
+                let seeds:[u8; 32] = rest
+                    .get(..32)
+                    .and_then(|slice| slice.try_into().ok()).unwrap();
+                Self::ChangeDestination { seeds }},
             _ => return Err(InvalidInstruction.into())
         })
     }
@@ -105,21 +106,18 @@ impl VestingInstruction {
     pub fn pack(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(size_of::<Self>());
         match self {
-            &Self::Create { seeds, amount, release_height , mint_address} => {
+            &Self::Create {seeds, amount, release_height , mint_address} => {
                 buf.push(0);
                 buf.extend_from_slice(&seeds);
                 buf.extend_from_slice(&amount.to_le_bytes());
                 buf.extend_from_slice(&release_height.to_le_bytes());
                 buf.extend_from_slice(&mint_address.to_bytes());
             }
-            // &Self::CreatePrivate { seeds, amount, release_height , mint_address} => {
-            //     buf.push(1);
-            //     buf.extend_from_slice(&seeds);
-            //     buf.extend_from_slice(&amount.to_le_bytes());
-            //     buf.extend_from_slice(&release_height.to_le_bytes());
-            //     buf.extend_from_slice(&mint_address.to_bytes());
-            // }
-            &Self::Unlock { seeds} => {
+            &Self::Unlock {seeds} => {
+                buf.push(2);
+                buf.extend_from_slice(&seeds);
+            }
+            &Self::ChangeDestination {seeds} => {
                 buf.push(2);
                 buf.extend_from_slice(&seeds);
             }

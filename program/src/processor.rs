@@ -205,7 +205,7 @@ impl Processor {
         Ok(())
     }
 
-    pub fn process_unlock(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32], ) -> ProgramResult {
+    pub fn process_unlock(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
         let accounts_iter = &mut _accounts.iter();
         
         let clock_sysvar_account = next_account_info(accounts_iter)?;
@@ -266,6 +266,44 @@ impl Processor {
         Ok(())
     }
 
+    pub fn process_change_destination(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
+        let accounts_iter = &mut _accounts.iter();
+        
+        let vesting_account = next_account_info(accounts_iter)?;
+        let destination_token_account_owner = next_account_info(accounts_iter)?;
+        let new_destination_token_account = next_account_info(accounts_iter)?;
+        
+        let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
+        let packed_state = vesting_account.try_borrow_data()?;
+        let state = VestingParameters::unpack(packed_state.as_ref())?;
+
+        if vesting_account_key != *vesting_account.key {
+            msg!("Invalid vesting account key");
+            return Err(ProgramError::InvalidArgument)
+        }
+        
+        if state.destination_address != *destination_token_account_owner.key {
+            msg!("Contract destination account does not matched provided account");
+            return Err(ProgramError::InvalidArgument)
+        }
+        
+        if !destination_token_account_owner.is_signer {
+            msg!("Destination token account owner should be a signer.");
+            return Err(ProgramError::InvalidArgument)
+        }
+        
+        let mut new_state = state;
+        new_state.destination_address = *new_destination_token_account.key;
+        let new_packed_state = new_state.pack();
+        
+        for i in 0..STATE_SIZE {
+            vesting_account.try_borrow_mut_data()?[i] = new_packed_state[i];
+        }
+
+        Ok(())
+    }
+
+
     pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
         msg!("Beginning processing");
         let instruction = VestingInstruction::unpack(instruction_data)?;
@@ -279,7 +317,10 @@ impl Processor {
                 msg!("Instruction: Unlock");
                 Self::process_unlock(program_id, accounts, seeds)
             }
-
+            VestingInstruction::ChangeDestination {seeds} => {
+                msg!("Instruction: Change Destination");
+                Self::process_change_destination(program_id, accounts, seeds)
+            }
         }
     }
 }
