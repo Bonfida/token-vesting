@@ -30,8 +30,13 @@ async fn test_token_vesting() {
     seeds[31] = bump;
     let vesting_token_account_key = Pubkey::new_unique();
     let source_token_account_owner_keypair = Keypair::new();
-    let source_token_account_key = get_associated_token_address(&source_token_account_owner_keypair.pubkey(), &mint_address_keypair.pubkey());
+    let source_token_account_key = get_associated_token_address(
+        &source_token_account_owner_keypair.pubkey(),
+        &mint_address_keypair.pubkey()
+    );
+    let destination_token_account_owner_keypair = Keypair::new();
     let destination_token_account_key = Pubkey::new_unique();
+    let new_destination_token_account_key = Pubkey::new_unique();
 
     let mut program_test = ProgramTest::new(
         "token_vesting",
@@ -66,10 +71,13 @@ async fn test_token_vesting() {
         release_height: 0,
         mint_address: mint_address_keypair.pubkey()
     }.pack();
+    let _change_destination_instruction_data = VestingInstruction::ChangeDestination{
+        seeds: seeds.clone()
+    }.pack();
     let unlock_instruction_data = VestingInstruction::Unlock{
         seeds: seeds.clone()
     }.pack();
-    
+
 
     // Create associated accountmetas
     let create_accounts = vec![
@@ -82,6 +90,12 @@ async fn test_token_vesting() {
         AccountMeta::new(destination_token_account_key, false),
     ];
 
+    let _change_destination_accounts = vec![
+        AccountMeta::new(vesting_account_key, false),
+        AccountMeta::new(destination_token_account_owner_keypair.pubkey(), true),
+        AccountMeta::new(new_destination_token_account_key, false),
+    ];
+
     let unlock_accounts = vec![
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
@@ -90,25 +104,40 @@ async fn test_token_vesting() {
         AccountMeta::new(destination_token_account_key, false),
     ];
 
+
     // Start the test network
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
+
     // Package the instructions
     let instructions = [
-
         // Create Mint account. This instruction must be followed by initialize (see spl_token::Instruction)
-        system_instruction::create_account(&payer.pubkey(), &mint_address_keypair.pubkey(), 5, 0, &program_id),
+        system_instruction::create_account(&payer.pubkey(), &mint_address_keypair.pubkey(), 1000, 0, &spl_token::id()),
 
         // Initialize mint account
-        initialize_mint(&spl_token::id(), &mint_address_keypair.pubkey(), &program_id, None, 0).unwrap(),
+        initialize_mint(&spl_token::id(), &mint_address_keypair.pubkey(), &program_id, None, 1).unwrap(),
 
         // Create token accounts
-        initialize_account(&spl_token::id(), &vesting_token_account_key, &mint_address_keypair.pubkey(), &vesting_account_key).unwrap(),
-        initialize_account(&spl_token::id(), &source_token_account_key, &mint_address_keypair.pubkey(), &source_token_account_owner_keypair.pubkey()).unwrap(),
-        initialize_account(&spl_token::id(), &destination_token_account_key, &mint_address_keypair.pubkey(), &Pubkey::new_unique()).unwrap(),
+        initialize_account(
+            &spl_token::id(),
+            &vesting_token_account_key,
+            &mint_address_keypair.pubkey(),
+            &vesting_account_key
+        ).unwrap(),
+        initialize_account(&spl_token::id(),
+            &source_token_account_key,
+            &mint_address_keypair.pubkey(),
+            &source_token_account_owner_keypair.pubkey()
+        ).unwrap(),
+        initialize_account(&spl_token::id(),
+            &destination_token_account_key,
+            &mint_address_keypair.pubkey(),
+            &destination_token_account_owner_keypair.pubkey()
+        ).unwrap(),
 
-        // Create and unlock vesting contract
+        // Create, change destination and unlock vesting contract
         Instruction { program_id, accounts: create_accounts, data: create_instruction_data },
+        // Instruction { program_id, accounts: change_destination, data: change_destination_instruction_data },
         Instruction { program_id, accounts: unlock_accounts, data: unlock_instruction_data }
     ];
 
@@ -118,7 +147,7 @@ async fn test_token_vesting() {
         &instructions,
         Some(&payer.pubkey()),
     );
-    transaction.sign(&[&payer, &mint_address_keypair], recent_blockhash);
+    transaction.partial_sign(&[&payer, &mint_address_keypair], recent_blockhash);
     
     banks_client.process_transaction(transaction).await.unwrap();
 }

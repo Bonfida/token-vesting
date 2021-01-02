@@ -64,7 +64,7 @@ mod tests {
             destination_address: Pubkey::new_unique(),
             mint_address: Pubkey::new_unique(),
             release_height: 30767976,
-            amount: 30767976,
+            amount: 969,
             is_initialized: true
         };
         let packed = Vec::from(state.pack());
