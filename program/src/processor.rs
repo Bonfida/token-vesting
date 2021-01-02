@@ -1,13 +1,7 @@
-use solana_program::{
-    account_info::{AccountInfo, next_account_info}, 
-    decode_error::DecodeError, entrypoint::ProgramResult, 
-    msg, program::{invoke, invoke_signed}, 
-    program_error::ProgramError, 
-    program_error::{PrintProgramError}, 
-    pubkey::Pubkey,
-    sysvar::{clock::Clock, Sysvar},
-};
-use spl_token::instruction::transfer;
+use solana_program::{account_info::{AccountInfo, next_account_info}, decode_error::DecodeError, entrypoint::ProgramResult, msg, program::{invoke, invoke_signed}, program_error::ProgramError, program_error::{PrintProgramError}, program_pack::Pack, pubkey::Pubkey, sysvar::{clock::Clock, Sysvar}};
+
+use spl_token::{instruction::transfer, state::Account};
+use spl_token::instruction::TokenInstruction;
 
 use spl_associated_token_account::get_associated_token_address;
 use num_traits::FromPrimitive;
@@ -108,7 +102,7 @@ impl Processor {
     // }
 
     pub fn process_create(
-        program_id: &Pubkey, 
+        program_id: &Pubkey,
         accounts: &[AccountInfo], 
         seeds: [u8; 32], 
         amount: u64, 
@@ -125,11 +119,6 @@ impl Processor {
         let source_token_account_owner = next_account_info(accounts_iter)?;
         let source_token_account = next_account_info(accounts_iter)?;
         let destination_token_account = next_account_info(accounts_iter)?;
-
-        // if !vesting_account.is_signer {
-        //     msg!("This instruction is private");
-        //     return Err(ProgramError::MissingRequiredSignature)
-        // }
 
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
         if vesting_account_key != *vesting_account.key {
@@ -170,24 +159,33 @@ impl Processor {
             vesting_account.try_borrow_mut_data()?[i] = packed_state[i];
         }
 
-        let vesting_token_account_address = get_associated_token_address(vesting_account.key, &mint_address);
-        let source_token_account_address = get_associated_token_address(source_token_account_owner.key, &mint_address);
+        let vesting_token_account_data = Account::unpack(
+            &vesting_token_account.data.borrow()
+        )?;
 
-        if *vesting_token_account.key != vesting_token_account_address {
-            msg!("Invalid vesting token account provided");
+        if vesting_token_account_data.owner != vesting_account_key {
+            msg!("The vesting token account should be owned by the vesting account.");
             return Err(ProgramError::InvalidArgument)
         }
 
-        if *source_token_account.key != source_token_account_address {
-            msg!("Invalid source token account provided");
-            return Err(ProgramError::InvalidArgument)
-        }
+        // let vesting_token_account_address = get_associated_token_address(vesting_account.key, &mint_address);
+        // let source_token_account_address = get_associated_token_address(source_token_account_owner.key, &mint_address);
+
+        // if *vesting_token_account.key != vesting_token_account_address {
+        //     msg!("Invalid vesting token account provided");
+        //     return Err(ProgramError::InvalidArgument)
+        // }
+
+        // if *source_token_account.key != source_token_account_address {
+        //     msg!("Invalid source token account provided");
+        //     return Err(ProgramError::InvalidArgument)
+        // }
 
         let transfer_tokens_to_vesting_account = transfer(
-            &spl_token_account.key,
-            &source_token_account_address,
-            &vesting_token_account_address,
-            &source_token_account_owner.key, //mint_account.key
+            spl_token_account.key,
+            source_token_account.key,
+            vesting_token_account.key,
+            source_token_account_owner.key,
             &[],
             amount
         )?;
@@ -197,10 +195,10 @@ impl Processor {
             &[
                 source_token_account.clone(),
                 vesting_token_account.clone(),  
+                spl_token_account.clone(),
                 // mint_account.clone(),
-                source_token_account_owner.clone(),
-                spl_token_account.clone()
-            ] //seed?
+                source_token_account_owner.clone()
+            ] // seed?
         )?;
         Ok(())
     }
@@ -208,8 +206,8 @@ impl Processor {
     pub fn process_unlock(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
         let accounts_iter = &mut _accounts.iter();
         
-        let clock_sysvar_account = next_account_info(accounts_iter)?;
         let spl_token_account = next_account_info(accounts_iter)?;
+        let clock_sysvar_account = next_account_info(accounts_iter)?;
         let vesting_account = next_account_info(accounts_iter)?;
         let vesting_token_account = next_account_info(accounts_iter)?;
         let destination_token_account = next_account_info(accounts_iter)?;
@@ -228,13 +226,22 @@ impl Processor {
             msg!("Contract destination account does not matched provided account");
             return Err(ProgramError::InvalidArgument)
         }
-        
-        let vesting_token_account_key = get_associated_token_address(&vesting_account_key, &state.mint_address);
-        
-        if vesting_token_account_key != *vesting_token_account.key{
-            msg!("Vesting token account does not match the provided vesting contract");
+
+        let vesting_token_account_data = Account::unpack(
+            &vesting_token_account.data.borrow()
+        )?;
+
+        if vesting_token_account_data.owner != vesting_account_key {
+            msg!("The vesting token account should be owned by the vesting account.");
             return Err(ProgramError::InvalidArgument)
         }
+        
+        // let vesting_token_account_key = get_associated_token_address(&vesting_account_key, &state.mint_address);
+        
+        // if vesting_token_account_key != *vesting_token_account.key{
+        //     msg!("Vesting token account does not match the provided vesting contract");
+        //     return Err(ProgramError::InvalidArgument)
+        // }
 
         // Check that sufficient slots have passed to unlock
         let clock = Clock::from_account_info(&clock_sysvar_account)?;
@@ -245,20 +252,20 @@ impl Processor {
         
         let transfer_tokens_from_vesting_account = transfer(
             &spl_token_account.key,
-            &vesting_token_account_key,
+            &vesting_token_account.key,
             destination_token_account.key,
-            &state.mint_address,
-            &[&vesting_account.key],
+            &vesting_account_key,
+            &[],
             state.amount                            //Could be done in cli
         )?;
         
         invoke_signed(
             &transfer_tokens_from_vesting_account,
             &[
+                spl_token_account.clone(),
                 vesting_token_account.clone(),
                 destination_token_account.clone(),
                 vesting_account.clone(),
-                spl_token_account.clone()
                 ],
                 &[&[&seeds]]
             )?;
@@ -266,23 +273,24 @@ impl Processor {
         Ok(())
     }
 
-    pub fn process_change_destination(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
-        let accounts_iter = &mut _accounts.iter();
+    pub fn process_change_destination(program_id: &Pubkey, accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
         
         let vesting_account = next_account_info(accounts_iter)?;
+        let destination_token_info = next_account_info(accounts_iter)?;
         let destination_token_account_owner = next_account_info(accounts_iter)?;
         let new_destination_token_account = next_account_info(accounts_iter)?;
+
         
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
-        let packed_state = vesting_account.try_borrow_data()?;
-        let state = VestingParameters::unpack(packed_state.as_ref())?;
+        let state = VestingParameters::unpack(vesting_account.try_borrow_data()?.as_ref())?;
 
         if vesting_account_key != *vesting_account.key {
             msg!("Invalid vesting account key");
             return Err(ProgramError::InvalidArgument)
         }
         
-        if state.destination_address != *destination_token_account_owner.key {
+        if state.destination_address != *destination_token_info.key {
             msg!("Contract destination account does not matched provided account");
             return Err(ProgramError::InvalidArgument)
         }
@@ -290,6 +298,17 @@ impl Processor {
         if !destination_token_account_owner.is_signer {
             msg!("Destination token account owner should be a signer.");
             return Err(ProgramError::InvalidArgument)
+        }
+
+
+        let destination_token_account = Account::unpack(
+            &destination_token_info.data.borrow()
+        )?;
+
+        if destination_token_account.owner != *destination_token_account_owner.key {
+            msg!("The current destination token account isn't owned by the provided owner");
+            return Err(ProgramError::InvalidArgument)
+
         }
         
         let mut new_state = state;
