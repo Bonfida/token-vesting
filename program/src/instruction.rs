@@ -19,12 +19,12 @@ pub enum VestingInstruction {
     ///   2. `[writable]` The vesting spl-token account
     ///   3. `[signer]` The source spl-token account owner
     ///   4. `[writable]` The source spl-token account
-    ///   5. `[]` The destination spl-token account
     Create {
         seeds: [u8; 32],
         amount: u64,
         release_height: u64,
-        mint_address: Pubkey
+        mint_address: Pubkey,
+        destination_token_address: Pubkey
     },  
     /// Unlocks a simple vesting contract (SVC) - can only be invoked by the program itself
     /// TODO only program ?
@@ -86,8 +86,14 @@ impl VestingInstruction {
                 .map(Pubkey::new)
                 .ok_or(InvalidInstruction)?;
                 // msg!("Parsed release_height");
+
+                let destination_token_address = rest
+                .get(80..112)
+                .and_then(|slice| slice.try_into().ok())
+                .map(Pubkey::new)
+                .ok_or(InvalidInstruction)?;
                 match tag {
-                    0 => Self::Create { seeds , amount, release_height, mint_address },
+                    0 => Self::Create { seeds , amount, release_height, mint_address , destination_token_address},
                     // 1 => Self::CreatePrivate { seeds , amount, release_height, mint_address },
                     _ => unreachable!()
                 }
@@ -110,12 +116,13 @@ impl VestingInstruction {
     pub fn pack(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(size_of::<Self>());
         match self {
-            &Self::Create {seeds, amount, release_height , mint_address} => {
+            &Self::Create {seeds, amount, release_height , mint_address, destination_token_address} => {
                 buf.push(0);
                 buf.extend_from_slice(&seeds);
                 buf.extend_from_slice(&amount.to_le_bytes());
                 buf.extend_from_slice(&release_height.to_le_bytes());
                 buf.extend_from_slice(&mint_address.to_bytes());
+                buf.extend_from_slice(&destination_token_address.to_bytes());
             }
             &Self::Unlock {seeds} => {
                 buf.push(2);
@@ -144,14 +151,15 @@ pub fn create(
     release_height:u64,
     seeds:[u8; 32]
 ) -> Result<Instruction, ProgramError> {
-    let data = VestingInstruction::Create { amount, mint_address: *mint_address, release_height, seeds }.pack();
+    let data = VestingInstruction::Create { 
+        amount, mint_address: *mint_address, release_height, seeds, destination_token_address: *destination_token_account_key 
+    }.pack();
     let accounts = vec![
         AccountMeta::new_readonly(*token_program_id, false),
         AccountMeta::new(*vesting_account_key, false),
         AccountMeta::new(*vesting_token_account_key, false),
         AccountMeta::new_readonly(*source_token_account_owner_key, true),
-        AccountMeta::new(*source_token_account_key, false),
-        AccountMeta::new_readonly(*destination_token_account_key, false),
+        AccountMeta::new(*source_token_account_key, false)
     ];
     Ok(Instruction {
         program_id: *vesting_program_id,
@@ -216,11 +224,13 @@ mod test {
     #[test]
     fn test_instruction_packing(){
         let mint_address = Pubkey::new_unique();
+        let destination_token_address = Pubkey::new_unique();
         let check = VestingInstruction::Create {
             seeds: [50u8;32],
             amount: 42,
             release_height: 250,
-            mint_address: mint_address.clone()
+            mint_address: mint_address.clone(),
+            destination_token_address
         };
         let mut expected = Vec::from([0]);
         let seeds = [50u8;32];
@@ -228,6 +238,7 @@ mod test {
         expected.extend_from_slice(&seeds);
         expected.extend_from_slice(&data);
         expected.extend_from_slice(&mint_address.to_bytes());
+        expected.extend_from_slice(&destination_token_address.to_bytes());
         let packed = check.pack();
         assert_eq!(expected, packed);
         let unpacked = VestingInstruction::unpack(&packed).unwrap();
