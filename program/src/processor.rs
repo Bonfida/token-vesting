@@ -8,98 +8,14 @@ use num_traits::FromPrimitive;
 
 use crate::{
     error::VestingError,
-    instruction::VestingInstruction, 
-    state::{VestingParameters, STATE_SIZE}
+    instruction::{VestingInstruction, Schedule}, 
+    state::{VestingParameters, STATE_SIZE, VestingSchedule, VestingScheduleHeader}
 };
 
 
 pub struct Processor {}
 
 impl Processor {
-
-    // pub fn process_init(
-    //     program_id: &Pubkey, 
-    //     accounts: &[AccountInfo], 
-    //     seeds: [u8; 32], 
-    //     amount: u64, 
-    //     release_height: u64,
-    //     mint_address: Pubkey
-    // ) -> ProgramResult {        
-    //     let accounts_iter = &mut accounts.iter();
-
-    //     let system_account = next_account_info(accounts_iter)?;
-    //     let vesting_account = next_account_info(accounts_iter)?;
-
-    //     msg!("Key : {:?}", system_account.key);
-    //     msg!("Vesting key : {:?}", vesting_account.key);
-    //     // return Err(ProgramError::InvalidArgument);
-
-    //     // if !system_account.executable {
-    //     //     msg!("System account is executable!");
-    //     //     return Err(ProgramError::InvalidArgument)
-    //     // }
-
-        
-    //     // if system_account.is_writable {
-    //     //     msg!("System account is writable!");
-    //     //     return Err(ProgramError::InvalidArgument)
-    //     // }
-
-
-    //     // if *system_account.key != system_program::id(){
-    //     //     return Err(ProgramError::InvalidArgument)
-    //     // }
-
-
-    //     let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
-
-    //     if vesting_account_key != *vesting_account.key {
-    //         return Err(ProgramError::InvalidArgument)
-    //     }
-
-        
-
-    //     // We might be able to do this with one invocation of allocate_with_seed
-    //     invoke_signed(
-    //         &allocate(&vesting_account_key, STATE_SIZE as u64),
-    //         &[
-    //             system_account.clone(),
-    //             vesting_account.clone(),
-    //         ],
-    //         &[&[&seeds]]
-    //     )?;
-
-    //     invoke_signed(
-    //         &assign(&vesting_account_key, program_id),
-    //         &[
-    //             system_account.clone(),
-    //             vesting_account.clone()
-    //         ],
-    //         &[&[&seeds]]
-    //     )?;
-
-    //     let mut instruction_accounts:Vec<AccountMeta> = accounts
-    //         .iter()
-    //         .map(|a| AccountMeta::new(a.key.clone(), a.is_signer))
-    //         .collect();
-    //     instruction_accounts[2] = AccountMeta::new(vesting_account.key.clone(), true);
-
-
-    //     let data = VestingInstruction::CreatePrivate { seeds, release_height, amount, mint_address }.pack();
-
-    //     let instruction = Instruction { program_id: program_id.clone(), accounts:instruction_accounts, data };
-
-    //     invoke_signed(
-    //         &instruction,
-    //         accounts,
-    //         &[&[&seeds]]
-    //     )?;
-
-
-
-    //     Ok(())
-
-    // }
 
     pub fn process_create(
         program_id: &Pubkey,
@@ -144,42 +60,45 @@ impl Processor {
             return Err(ProgramError::InvalidArgument)
         }
 
-        let state = VestingParameters { 
+        // let state = VestingParameters { 
+        //     destination_address: destination_token_address, 
+        //     release_height, 
+        //     mint_address: mint_address,
+        //     amount,
+        //     is_initialized: true
+        // };
+        let state_header = VestingScheduleHeader { 
             destination_address: destination_token_address, 
-            release_height, 
             mint_address: mint_address,
-            amount,
             is_initialized: true
         };
 
+        let state_schedule = VestingSchedule {
+            release_height, 
+            amount,
+        };
+
+        
         // TODO: Rework this
-        let packed_state = state.pack();
-
-        for i in 0..STATE_SIZE {
-            vesting_account.try_borrow_mut_data()?[i] = packed_state[i];
-        }
-
+        // let packed_header= state_header.pack();
+        
+        // for i in 0..STATE_SIZE {
+            //     vesting_account.try_borrow_mut_data()?[i] = packed_state[i];
+            // }
+            
         let vesting_token_account_data = Account::unpack(
             &vesting_token_account.data.borrow()
         )?;
-
+        
         if vesting_token_account_data.owner != vesting_account_key {
             msg!("The vesting token account should be owned by the vesting account.");
             return Err(ProgramError::InvalidArgument)
         }
+        
+        let mut data = vesting_account.data.borrow_mut();
 
-        // let vesting_token_account_address = get_associated_token_address(vesting_account.key, &mint_address);
-        // let source_token_account_address = get_associated_token_address(source_token_account_owner.key, &mint_address);
-
-        // if *vesting_token_account.key != vesting_token_account_address {
-        //     msg!("Invalid vesting token account provided");
-        //     return Err(ProgramError::InvalidArgument)
-        // }
-
-        // if *source_token_account.key != source_token_account_address {
-        //     msg!("Invalid source token account provided");
-        //     return Err(ProgramError::InvalidArgument)
-        // }
+        state_header.pack_into_slice(&mut data);
+        state_schedule.pack_into_slice(&mut data[VestingScheduleHeader::LEN..]);
 
         let transfer_tokens_to_vesting_account = transfer(
             spl_token_account.key,
@@ -203,6 +122,26 @@ impl Processor {
         Ok(())
     }
 
+    pub fn process_create_schedule(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        mint_address: &Pubkey,
+        destination_token_address: &Pubkey,
+        schedules: Vec<Schedule>
+
+    ) -> ProgramResult {
+        let accounts_iter = &mut accounts.iter();
+
+        //TODO put vesting and vesting token together
+        let spl_token_account = next_account_info(accounts_iter)?;
+        // let mint_account = next_account_info(accounts_iter)?;
+        let vesting_account = next_account_info(accounts_iter)?;
+        let vesting_token_account = next_account_info(accounts_iter)?;
+        let source_token_account_owner = next_account_info(accounts_iter)?;
+        let source_token_account = next_account_info(accounts_iter)?;
+        Ok(())
+    }
+
     pub fn process_unlock(program_id: &Pubkey, _accounts: &[AccountInfo], seeds: [u8; 32]) -> ProgramResult {
         let accounts_iter = &mut _accounts.iter();
         
@@ -219,8 +158,8 @@ impl Processor {
             return Err(ProgramError::InvalidArgument)
         }
         
-        let packed_state = vesting_account.try_borrow_data()?;
-        let state = VestingParameters::unpack(packed_state.as_ref())?;
+        let mut packed_state = &vesting_account.data;
+        let mut state = VestingParameters::unpack(&packed_state.borrow())?;
         
         if state.destination_address != *destination_token_account.key {
             msg!("Contract destination account does not matched provided account");
@@ -269,6 +208,10 @@ impl Processor {
                 ],
                 &[&[&seeds]]
             )?;
+        
+        // This makes the simple unlock safe with complex scheduling contracts
+        state.amount = 0;
+        state.pack_into_slice(&mut packed_state.borrow_mut());
             
         Ok(())
     }
@@ -313,11 +256,12 @@ impl Processor {
         
         let mut new_state = state;
         new_state.destination_address = *new_destination_token_account.key;
-        let new_packed_state = new_state.pack();
+        new_state.pack_into_slice(&mut vesting_account.data.borrow_mut());
+        // let new_packed_state = new_state.pack();
         
-        for i in 0..STATE_SIZE {
-            vesting_account.try_borrow_mut_data()?[i] = new_packed_state[i];
-        }
+        // for i in 0..STATE_SIZE {
+        //     vesting_account.try_borrow_mut_data()?[i] = new_packed_state[i];
+        // }
 
         Ok(())
     }
@@ -339,6 +283,10 @@ impl Processor {
             VestingInstruction::ChangeDestination {seeds} => {
                 msg!("Instruction: Change Destination");
                 Self::process_change_destination(program_id, accounts, seeds)
+            }
+            VestingInstruction::CreateSchedule {seeds, mint_address, destination_token_address, schedules} => {
+                msg!("Instruction: Create Schedule");
+                Self::process_create_schedule(program_id, accounts, &mint_address, &destination_token_address, schedules)
             }
         }
     }
