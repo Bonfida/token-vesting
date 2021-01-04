@@ -240,11 +240,6 @@ fn create_token_account(
             165,
             &spl_token::id()
         ),
-        // create_associated_token_account(
-        //     &payer.pubkey(),
-        //     source_token_account,
-        //     &mint.pubkey()
-        // ),
         initialize_account(
             &spl_token::id(), 
             &token_account.pubkey(), 
