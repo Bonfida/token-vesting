@@ -2,9 +2,6 @@
 use std::str::FromStr;
 
 use solana_program::{hash::Hash,
-    instruction::{AccountMeta, Instruction},
-    program_option::COption,
-    program_pack::Pack,
     pubkey::Pubkey,
     rent::Rent,
     sysvar,
@@ -19,10 +16,8 @@ use solana_sdk::{
     system_instruction
 };
 use token_vesting::{entrypoint::process_instruction, instruction::Schedule};
-use token_vesting::instruction::{VestingInstruction, init, create, unlock, change_destination, create_schedule};
-use token_vesting::state::TOTAL_SIZE;
-use spl_associated_token_account::{get_associated_token_address, create_associated_token_account};
-use spl_token::{self, instruction::{initialize_mint, initialize_account, mint_to}, state::Mint};
+use token_vesting::instruction::{init, unlock, change_destination, create};
+use spl_token::{self, instruction::{initialize_mint, initialize_account, mint_to}};
 
 #[tokio::test]
 async fn test_token_vesting() {
@@ -72,7 +67,8 @@ async fn test_token_vesting() {
         &program_id,
         &source_account.pubkey(),
         &vesting_account_key,
-        seeds
+        seeds,
+        1
     ).unwrap()
     ];
     let mut init_transaction = Transaction::new_with_payer(
@@ -125,7 +121,7 @@ async fn test_token_vesting() {
     ];
 
     let test_instructions = [
-        create_schedule(
+        create(
             &program_id,
             &spl_token::id(),
             &vesting_account_key,
