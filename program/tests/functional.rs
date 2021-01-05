@@ -58,7 +58,7 @@ async fn test_token_vesting() {
     program_test.add_account(
         source_account.pubkey(),
         Account {
-            lamports: 5,
+            lamports: 5000000,
             ..Account::default()
         },
     );
