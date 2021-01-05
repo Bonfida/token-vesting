@@ -130,7 +130,6 @@ impl Processor {
         //     amount,
         // };
 
-        
         let mut data = vesting_account.data.borrow_mut();
         state.pack_into_slice(&mut data);
         // state_header.pack_into_slice(&mut data);

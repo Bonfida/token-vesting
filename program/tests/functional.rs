@@ -155,7 +155,6 @@ async fn test_token_vesting() {
             seeds.clone()
         ).unwrap()
     ];
-
     
     // Process transaction on test network
     let mut setup_transaction = Transaction::new_with_payer(
