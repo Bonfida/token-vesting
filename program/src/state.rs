@@ -8,7 +8,7 @@ pub const HEADER_SIZE:usize = 65;
 
 pub const SCHEDULE_SIZE:usize = 16;
 
-pub const TOTAL_SIZE:usize = STATE_SIZE + HEADER_SIZE + SCHEDULE_SIZE;
+pub const TOTAL_SIZE:usize = STATE_SIZE;
 
 pub struct VestingParameters {
     // A destination token address
