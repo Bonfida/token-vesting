@@ -34,7 +34,7 @@ impl Processor {
     pub fn process_init(
         program_id: &Pubkey,
         accounts: &[AccountInfo],
-        mut seeds: [u8; 32],
+        seeds: [u8; 32],
     ) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 
@@ -43,12 +43,15 @@ impl Processor {
         let vesting_account = next_account_info(accounts_iter)?;
 
         // Find the non reversible public key for the vesting contract via the seed    
-        let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&seeds[..31]], &program_id);
-        seeds[31] = bump;
+        let vesting_account_key = Pubkey::create_program_address(&[&seeds], &program_id).unwrap();
+        if vesting_account_key != *vesting_account.key {
+            msg!("Provided vesting account is invalid");
+            return Err(ProgramError::InvalidArgument)
+        }
 
         let init_vesting_account = create_account(
             &source_token_account_owner.key,
-            &vesting_pubkey,
+            &vesting_account_key,
             Rent::default().minimum_balance(TOTAL_SIZE),
             TOTAL_SIZE as u64,
             &program_id
@@ -58,7 +61,8 @@ impl Processor {
             &init_vesting_account,
             &[
                 system_program_account.clone(),
-                source_token_account_owner.clone()
+                source_token_account_owner.clone(),
+                vesting_account.clone()
             ],
             &[&[&seeds]]
         )?;
