@@ -18,17 +18,22 @@ fn command_create_svc(
     program_id: Pubkey,
     vesting_seed: [u8;32],
     source_token_owner: Keypair,
-    source_token_pubkey: Pubkey, // TODO make it Option, if None, use associated
+    possible_source_token_pubkey: Option<Pubkey>,
     destination_token_pubkey: Pubkey,
     mint_address: Pubkey,
     vesting_amount: u64
 ) {
-    // match source_token_owner {
-    //     Pubkey 
-    // }
-    let vesting_keypair = keypair_from_seed(&vesting_seed).unwrap(); //TODO add uniqueness
-    let vesting_pubkey = vesting_keypair.pubkey();
-    msg!("Vesting account pubkey: {:?}", vesting_pubkey);
+
+    // If no source token account was given, use the associated source account
+    let source_token_pubkey = match possible_source_token_pubkey {
+        None => get_associated_token_address(&source_token_owner.pubkey(), &mint_address),
+        _ => possible_source_token_pubkey.unwrap(),
+    };
+
+    // Find the non reversible public key for the vesting contract via the seed    
+    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
+    vesting_seed[31] = bump;
+    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
 
     let vesting_token_pubkey = get_associated_token_address(
         &vesting_pubkey, 
@@ -40,7 +45,7 @@ fn command_create_svc(
         system_instruction::create_account(
             &source_token_owner.pubkey(),
             &vesting_pubkey,
-            Rent::default().minimum_balance(165),   //TODO add transfer fee for the unlock
+            Rent::default().minimum_balance(165),
             165,
             &program_id
         ),
@@ -81,23 +86,26 @@ fn command_unlock_svc(
     rpc_client: RpcClient,
     program_id: Pubkey,
     vesting_seed: [u8;32],
-    destination_token_pubkey: Pubkey,
+    mut destination_token_pubkey: Pubkey,
     mint_address: Pubkey,
     payer: Keypair
 ) {
     // Find the non reversible public key for the vesting contract via the seed    
-    // let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
-    // vesting_seed[31] = bump;
-    let vesting_keypair = keypair_from_seed(&vesting_seed).unwrap();
-    let vesting_pubkey = vesting_keypair.pubkey();
-    msg!("Vesting account pubkey: {:?}", vesting_pubkey);
+    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
+    vesting_seed[31] = bump;
+    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
 
     let vesting_token_pubkey = get_associated_token_address(
         &vesting_pubkey,
         &mint_address
     );
 
-    //TODO initialize associated destination token account if none found
+    // If the destination token account is not found or initialized, use the associated token address 
+    // destination_token_pubkey = match rpc_client.get_token_account(&destination_token_pubkey)? {
+    //     None | ui_token_account if ui_token_account.unwrap().state == UiAccountState::Uninitialized
+    //         => get_associated_token_address(&destination_token_pubkey.pubkey(), &mint_address),
+    //     _ => destination_token_pubkey
+    // };
 
     let unlock_instruction = unlock(
         &program_id,
@@ -314,7 +322,7 @@ fn main() {
     let _ = match matches.subcommand() {
         ("create-svc", Some(arg_matches)) => {
             let source_keypair = keypair_of(arg_matches, "source").unwrap();
-            let source_token_pubkey = pubkey_of(arg_matches, "source_token_address").unwrap();
+            let source_token_pubkey = pubkey_of(arg_matches, "source_token_address");
             let destination_pubkey = pubkey_of(arg_matches, "destination").unwrap();
             let vesting_amount = lamports_of_sol(arg_matches, "amount").unwrap();
             msg!("Source Pubkey: {:?}", &source_keypair.pubkey());
