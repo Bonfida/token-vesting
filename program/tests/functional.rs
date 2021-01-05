@@ -69,16 +69,18 @@ async fn test_token_vesting() {
     // Initialize the vesting program account
     let init_instruction = [init(
         &system_program::id(),
-        &vesting_account_key,
+        &program_id,
         &source_account.pubkey(),
-        seeds).unwrap()
+        &vesting_account_key,
+        seeds
+    ).unwrap()
     ];
     let mut init_transaction = Transaction::new_with_payer(
         &init_instruction,
         Some(&payer.pubkey()),
     );
     init_transaction.partial_sign(
-        &[&source_account, &payer], 
+        &[&source_account, &payer],
         recent_blockhash
     );
     banks_client.process_transaction(init_transaction).await.unwrap();

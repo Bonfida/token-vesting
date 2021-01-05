@@ -40,6 +40,7 @@ impl Processor {
 
         let system_program_account = next_account_info(accounts_iter)?;
         let source_token_account_owner = next_account_info(accounts_iter)?;
+        let vesting_account = next_account_info(accounts_iter)?;
 
         // Find the non reversible public key for the vesting contract via the seed    
         let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&seeds[..31]], &program_id);
