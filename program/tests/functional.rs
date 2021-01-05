@@ -18,8 +18,8 @@ use solana_sdk::{
     signature::Keypair,
     system_instruction
 };
-use token_vesting::entrypoint::process_instruction;
-use token_vesting::instruction::{VestingInstruction, init, create, unlock, change_destination};
+use token_vesting::{entrypoint::process_instruction, instruction::Schedule};
+use token_vesting::instruction::{VestingInstruction, init, create, unlock, change_destination, create_schedule};
 use token_vesting::state::TOTAL_SIZE;
 use spl_associated_token_account::{get_associated_token_address, create_associated_token_account};
 use spl_token::{self, instruction::{initialize_mint, initialize_account, mint_to}, state::Mint};
@@ -120,8 +120,12 @@ async fn test_token_vesting() {
         ).unwrap()
     ];
 
+    let schedules = vec![
+        Schedule {amount: 20, release_height: 0}
+    ];
+
     let test_instructions = [
-        create(
+        create_schedule(
             &program_id,
             &spl_token::id(),
             &vesting_account_key,
@@ -130,8 +134,7 @@ async fn test_token_vesting() {
             &source_token_account.pubkey(),
             &destination_token_account.pubkey(),
             &mint.pubkey(),
-            20,
-            0,
+            schedules,
             seeds.clone()
         ).unwrap(),
         unlock(

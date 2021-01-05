@@ -1,4 +1,4 @@
-use solana_program::{program_error::ProgramError, program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey};
+use solana_program::{msg, program_error::ProgramError, program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey};
 
 use std::convert::TryInto;
 
@@ -14,9 +14,9 @@ pub struct VestingParameters {
     // A destination token address
     pub destination_address : Pubkey,
     pub mint_address : Pubkey,
-    pub is_initialized: bool,
     pub release_height: u64,
     pub amount: u64,
+    pub is_initialized: bool,
 }
 pub struct VestingSchedule {
     pub release_height: u64,
@@ -74,8 +74,10 @@ impl Pack for VestingSchedule {
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
+        msg!("Unpacking schedule");
         let release_height = u64::from_le_bytes(src[0..8].try_into().unwrap());
         let amount = u64::from_le_bytes(src[8..16].try_into().unwrap());
+        msg!("Unpacked schedule");
         Ok(Self {release_height, amount})
     }
 }
@@ -121,6 +123,35 @@ impl Pack for VestingParameters {
 impl IsInitialized for VestingParameters {
     fn is_initialized(&self) -> bool {
         self.is_initialized
+    }
+}
+
+impl IsInitialized for VestingScheduleHeader {
+    fn is_initialized(&self) -> bool {
+        self.is_initialized
+    }
+}
+
+pub fn unpack_schedules(input: &[u8]) -> Result<Vec<VestingSchedule>, ProgramError> {
+    let number_of_schedules = input.len()/SCHEDULE_SIZE;
+    msg!("Number of schedules {:?}", number_of_schedules);
+    let mut output:Vec<VestingSchedule> = Vec::with_capacity(number_of_schedules);
+    let mut offset = 0;
+    for i in 0..number_of_schedules {
+        msg!("Preparing to unpack schedule {:?}", i);
+        output.push(VestingSchedule::unpack_from_slice(&input[offset..offset+SCHEDULE_SIZE])?);
+        msg!("Unpacked schedule {:?}", i);
+
+        offset += SCHEDULE_SIZE;
+    }
+    Ok(output)
+}
+
+pub fn pack_schedules_into_slice(schedules: Vec<VestingSchedule>, target: &mut [u8]){
+    let mut offset = 0;
+    for s in schedules.iter(){
+        s.pack_into_slice(&mut target[offset..]);
+        offset += SCHEDULE_SIZE;
     }
 }
 
