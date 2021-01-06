@@ -42,7 +42,6 @@ async fn test_token_vesting() {
     // let vesting_token_account = get_associated_token_address(&vesting_account_key, &mint.pubkey());
     let vesting_token_account = Keypair::new();
     
-
     let mut program_test = ProgramTest::new(
         "token_vesting",
         program_id,
@@ -236,7 +235,6 @@ fn mint_init_transaction(
         recent_blockhash
     );
     transaction
-    
 }
 
 fn create_token_account(
