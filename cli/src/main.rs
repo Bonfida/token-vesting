@@ -97,7 +97,6 @@ fn command_unlock_svc(
     rpc_client: RpcClient,
     program_id: Pubkey,
     mut vesting_seed: [u8;32],
-    mint_address: Pubkey,
     payer: Keypair
 ) {
     // Find the non reversible public key for the vesting contract via the seed    
@@ -105,14 +104,14 @@ fn command_unlock_svc(
     vesting_seed[31] = bump;
     msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
 
-    let vesting_token_pubkey = get_associated_token_address(
-        &vesting_pubkey,
-        &mint_address
-    );
-
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let header_state = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap(); 
     let destination_token_pubkey = header_state.destination_address;
+    
+    let vesting_token_pubkey = get_associated_token_address(
+        &vesting_pubkey,
+        &header_state.mint_address
+    );
 
     let unlock_instruction = unlock(
         &program_id,
@@ -139,7 +138,8 @@ fn command_change_destination(
     rpc_client: RpcClient,
     program_id: Pubkey,
     destination_token_account_owner: Keypair,
-    new_destination_token_account: Pubkey,
+    opt_new_destination_account: Option<Pubkey>,
+    opt_new_destination_token_account: Option<Pubkey>,
     mut vesting_seed: [u8;32],
     payer: Keypair
 ) {
@@ -151,6 +151,12 @@ fn command_change_destination(
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let state_header = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap();
     let destination_token_pubkey = state_header.destination_address; 
+
+    let new_destination_token_account = match opt_new_destination_token_account {
+        None => get_associated_token_address(
+            &opt_new_destination_account.unwrap(), &state_header.mint_address),
+        Some(new_destination_token_account) => new_destination_token_account
+    };
 
     let unlock_instruction = change_destination(
         &program_id,
@@ -181,18 +187,29 @@ fn command_info(
     msg!("\n---------------VESTING--CONTRACT--INFO-----------------\n");
     msg!("RPC URL: {:?}", &rpc_url);
     msg!("Program ID: {:?}", &program_id);
+    msg!("Original Vesting Seed: {:?}", &std::str::from_utf8(&vesting_seed).unwrap());
     
     // Find the non reversible public key for the vesting contract via the seed    
     let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
     vesting_seed[31] = bump;
-    msg!("Corrected Vesting Seed: {:?}", &vesting_seed);
-    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
+    msg!("Corrective Seed Bump: {:?}", bump);
+    msg!("Vesting Account Pubkey: {:?}", &vesting_pubkey);
 
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let state_header = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap();
+    let vesting_token_pubkey = get_associated_token_address(
+        &vesting_pubkey,
+        &state_header.mint_address
+    );
+    let destination_token_pubkey = get_associated_token_address(
+        &state_header.destination_address,
+        &state_header.mint_address
+    );
+    msg!("Vesting Token Account Pubkey: {:?}", &vesting_token_pubkey);
     msg!("Initialized: {:?}", &state_header.is_initialized);
-    msg!("Destination: {:?}", &state_header.destination_address);
     msg!("Mint Address: {:?}", &state_header.mint_address);
+    msg!("Destination Address: {:?}", &state_header.destination_address);
+    msg!("Destination Token Address: {:?}", &destination_token_pubkey);
 
     let schedules = unpack_schedules(&packed_state[VestingScheduleHeader::LEN..]).unwrap();
 
@@ -238,16 +255,6 @@ fn main() {
                 ),
         )
         .arg(
-            Arg::with_name("mint_address")
-                .long("mint_address")
-                .value_name("ADDRESS")
-                .validator(is_pubkey)
-                .takes_value(true)
-                .help(
-                    "Specify the adress (publickey) of the mint for the token that should be used.",
-                ),
-        )
-        .arg(
             Arg::with_name("seed")
                 .long("seed")
                 .value_name("ADDRESS")
@@ -259,8 +266,18 @@ fn main() {
         )
         .subcommand(SubCommand::with_name("create").about("Create a new vesting contract with an optionnal release schedule")        
             .arg(
-                Arg::with_name("source")
-                    .long("source")
+                Arg::with_name("mint_address")
+                    .long("mint_address")
+                    .value_name("ADDRESS")
+                    .validator(is_pubkey)
+                    .takes_value(true)
+                    .help(
+                        "Specify the adress (publickey) of the mint for the token that should be used.",
+                    ),
+            )
+            .arg(
+                Arg::with_name("source_owner")
+                    .long("source_owner")
                     .value_name("KEYPAIR")
                     .validator(is_keypair)
                     .takes_value(true)
@@ -303,7 +320,7 @@ fn main() {
                         If specified, this address will be used as a destination, \
                         and overwrite the associated token account.",
                     ),
-            )               
+            )        
             .arg(
                 Arg::with_name("amounts")
                     .long("amounts")
@@ -311,12 +328,14 @@ fn main() {
                     .validator(is_amount)
                     .takes_value(true)
                     .multiple(true)
-                    .value_terminator(";")
+                    .use_delimiter(true)
+                    .value_terminator("!")
+                    .allow_hyphen_values(true)
                     .help(
                         "Amounts of tokens to transfer via the vesting \
                         contract. Multiple inputs seperated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
-                        needs to end with a semi-colon.",
+                        needs to end with an exclamation mark ( e.g. 1,2,3,! )",
                     ),
             )
             .arg(
@@ -326,12 +345,14 @@ fn main() {
                     .validator(is_slot)
                     .takes_value(true)
                     .multiple(true)
-                    .value_terminator(";")
+                    .use_delimiter(true)
+                    .value_terminator("!")
+                    .allow_hyphen_values(true)
                     .help(
                         "Release height in network slots to decide when the contract is \
                         unlockable. Multiple inputs seperated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
-                        needs to end with a semi-colon.",
+                        needs to end with an exclamation mark ( e.g. 1,2,3,! ).",
                     ),
             )
             .arg(
@@ -421,12 +442,12 @@ fn main() {
 
     let program_id = pubkey_of(&matches, "program_id").unwrap();
     let vesting_seed = (*String::as_bytes(&value_of(&matches, "seed").unwrap())).try_into().unwrap();
-    let mint_address = pubkey_of(&matches, "mint_address").unwrap();
         
     let _ = match matches.subcommand() {
         ("create", Some(arg_matches)) => {
-            let source_keypair = keypair_of(arg_matches, "source").unwrap();
+            let source_keypair = keypair_of(arg_matches, "source_owner").unwrap();
             let source_token_pubkey = pubkey_of(arg_matches, "source_token_address");
+            let mint_address = pubkey_of(arg_matches, "mint_address").unwrap();
             let destination_pubkey = match pubkey_of(arg_matches, "destination_token_address") {
                 None => get_associated_token_address(
                 &pubkey_of(arg_matches, "destination_address").unwrap(), &mint_address),
@@ -464,23 +485,20 @@ fn main() {
                 rpc_client,
                 program_id,
                 vesting_seed,
-                mint_address,
                 payer_keypair
             )
         }
         ("change-destination", Some(arg_matches)) => {
             let destination_account_owner = keypair_of(arg_matches, "current_destination_owner").unwrap();
-            let new_destination_token_account = match pubkey_of(arg_matches, "new_destination_token_address") {
-                None => get_associated_token_address(
-                    &pubkey_of(arg_matches, "new_destination_address").unwrap(), &mint_address),
-                Some(new_destination_token_account) => new_destination_token_account
-            };
+            let opt_new_destination_account = pubkey_of(arg_matches, "new_destination_address");
+            let opt_new_destination_token_account = pubkey_of(arg_matches, "new_destination_token_address");
             let payer_keypair = keypair_of(arg_matches, "payer").unwrap();
             command_change_destination(
                 rpc_client,
                 program_id,
                 destination_account_owner,
-                new_destination_token_account,
+                opt_new_destination_account,
+                opt_new_destination_token_account,
                 vesting_seed,
                 payer_keypair
             )

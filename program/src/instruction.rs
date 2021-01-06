@@ -77,9 +77,7 @@ impl VestingInstruction {
 
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         use VestingError::InvalidInstruction;
-        // msg!("Received : {:?}", input);
         let (&tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
-        // msg!("Parsed tag : {:?}", tag);
         Ok(match tag {
             0 => {
                 let seeds:[u8; 32] = rest

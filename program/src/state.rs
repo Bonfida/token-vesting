@@ -1,4 +1,4 @@
-use solana_program::{msg, program_error::ProgramError, program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey};
+use solana_program::{program_error::ProgramError, program_pack::{IsInitialized, Pack, Sealed}, pubkey::Pubkey};
 
 use std::convert::TryInto;
 #[derive(Debug, PartialEq)]
@@ -59,10 +59,8 @@ impl Pack for VestingSchedule {
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        msg!("Unpacking schedule");
         let release_height = u64::from_le_bytes(src[0..8].try_into().unwrap());
         let amount = u64::from_le_bytes(src[8..16].try_into().unwrap());
-        msg!("Unpacked schedule");
         Ok(Self {release_height, amount})
     }
 }
@@ -75,14 +73,10 @@ impl IsInitialized for VestingScheduleHeader {
 
 pub fn unpack_schedules(input: &[u8]) -> Result<Vec<VestingSchedule>, ProgramError> {
     let number_of_schedules = input.len()/VestingSchedule::LEN;
-    msg!("Number of schedules {:?}", number_of_schedules);
     let mut output:Vec<VestingSchedule> = Vec::with_capacity(number_of_schedules);
     let mut offset = 0;
-    for i in 0..number_of_schedules {
-        msg!("Preparing to unpack schedule {:?}", i);
+    for _ in 0..number_of_schedules {
         output.push(VestingSchedule::unpack_from_slice(&input[offset..offset+VestingSchedule::LEN])?);
-        msg!("Unpacked schedule {:?}", i);
-
         offset += VestingSchedule::LEN;
     }
     Ok(output)
