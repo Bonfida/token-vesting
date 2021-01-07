@@ -53,8 +53,10 @@ struct FuzzInstruction {
 /// more often.
 type AccountId = u8;
 
-fn main() {
 
+#[tokio::main]
+async fn main() {
+    
     // Set up the fixed test environment
     let token_vesting_testenv = TokenVestingEnv {
         system_program_id: system_program::id(),

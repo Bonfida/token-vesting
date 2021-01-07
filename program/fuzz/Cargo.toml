@@ -15,9 +15,10 @@ solana-program-test = "1.5.0"
 spl-token = {version = "3.0.1", features = ["no-entrypoint"]}
 spl-associated-token-account = {version = "1.0.2", features = ["no-entrypoint"]}
 token-vesting =  { version = "0.1.0", path="..", features=["no-entrypoint", "fuzz"] }
+tokio = { version = "0.3", features = ["macros"]}
 
 [[bin]]
-name = "vesting"
+name = "vesting_fuzz"
 path = "src/vesting_fuzz.rs"
 test = false
 doc = false
