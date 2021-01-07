@@ -25,7 +25,7 @@ async function findAssociatedTokenAddress(
 
 async function create(
   programId: PublicKey,
-  vestingSeed: Array<Buffer | Uint8Array>,
+  vestingSeed: Array<Buffer>,
   payer: Account,
   source_token_owner: Account,
   possible_source_token_pubkey: PublicKey | null,
@@ -61,3 +61,4 @@ async function create(
     ),
   ];
 }
+

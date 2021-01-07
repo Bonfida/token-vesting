@@ -1,6 +1,6 @@
 import { u64 } from '@solana/spl-token';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
-import * as BufferLayout from 'buffer-layout';
+import { Numberu64 } from './utils';
 
 export enum Instruction {
   Init,
@@ -12,13 +12,14 @@ export function createInitInstruction(
   vestingProgramId: PublicKey,
   payerKey: PublicKey,
   vestingAccountKey: PublicKey,
-  seeds: Array<Buffer | Uint8Array>,
+  seeds: Array<Buffer>,
   numberOfSchedules: number,
 ): TransactionInstruction {
   let buffers = [
     Buffer.from(Int8Array.from([0]).buffer),
     Buffer.concat(seeds),
-    BufferLayout.blob(8, numberOfSchedules.toString()),
+    // @ts-ignore
+    new Numberu64(numberOfSchedules).toBuffer(),
   ];
   const data = Buffer.concat(buffers);
   const keys = [
@@ -55,7 +56,7 @@ export function createCreateInstruction(
   destinationTokenAccountKey: PublicKey,
   mintAddress: PublicKey,
   schedules: Array<Schedule>,
-  seeds: Array<Buffer | Uint8Array>,
+  seeds: Array<Buffer>,
 ): TransactionInstruction {
   let buffers = [
     Buffer.from(Int8Array.from([1]).buffer),
@@ -108,7 +109,7 @@ export function createUnlockInstruction(
   vestingAccountKey: PublicKey,
   vestingTokenAccountKey: PublicKey,
   destinationTokenAccountKey: PublicKey,
-  seeds: Array<Buffer | Uint8Array>,
+  seeds: Array<Buffer>,
 ): TransactionInstruction {
   const data = Buffer.concat(seeds);
 
@@ -152,7 +153,7 @@ export function createChangeDestinationInstruction(
   currentDestinationTokenAccountOwner: PublicKey,
   currentDestinationTokenAccount: PublicKey,
   targetDestinationTokenAccount: PublicKey,
-  seeds: Array<Buffer | Uint8Array>,
+  seeds: Array<Buffer>,
 ): TransactionInstruction {
   const data = Buffer.concat(seeds);
 
@@ -186,18 +187,18 @@ export function createChangeDestinationInstruction(
 }
 
 class Create {
-  seeds: Array<Buffer | Uint8Array>;
+  seeds: Array<Buffer>;
   mint_address: PublicKey;
   destination_token_address: PublicKey;
   schedules: Array<Schedule>;
 }
 
 class Unlock {
-  seeds: Array<Buffer | Uint8Array>;
+  seeds: Array<Buffer>;
 }
 
 class ChangeDestination {
-  seeds: Array<Buffer | Uint8Array>;
+  seeds: Array<Buffer>;
 }
 
 export class Schedule {
