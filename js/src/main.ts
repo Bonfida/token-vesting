@@ -63,13 +63,14 @@ async function create(
   );
 
   console.log('Vesting token account pubkey: ', pubkey.toBase58());
+
   let instruction = [
     createInitInstruction(
       SystemProgram.programId,
       programId,
       payer.publicKey,
       pubkey,
-      vestingSeed,
+      [Buffer.from(pubkey.toBase58().slice(0, 31) + bump.toString(), 'hex')],
       schedules.length,
     ),
   ];
