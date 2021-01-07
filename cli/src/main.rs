@@ -208,8 +208,7 @@ fn command_info(
     msg!("Vesting Token Account Pubkey: {:?}", &vesting_token_pubkey);
     msg!("Initialized: {:?}", &state_header.is_initialized);
     msg!("Mint Address: {:?}", &state_header.mint_address);
-    msg!("Destination Address: {:?}", &state_header.destination_address);
-    msg!("Destination Token Address: {:?}", &destination_token_pubkey);
+    msg!("Destination Token Address: {:?}", &state_header.destination_address);
 
     let schedules = unpack_schedules(&packed_state[VestingScheduleHeader::LEN..]).unwrap();
 

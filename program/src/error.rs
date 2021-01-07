@@ -7,7 +7,10 @@ use thiserror::Error;
 pub enum VestingError {
     // Invalid instruction
     #[error("Invalid Instruction")]
-    InvalidInstruction
+    InvalidInstruction,
+
+    // #[error("Invalid Instruction")]
+    // InvalidInstruction,
 }
 
 

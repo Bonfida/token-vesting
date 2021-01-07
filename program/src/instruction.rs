@@ -173,7 +173,7 @@ pub fn init(
     system_program_id: &Pubkey,
     vesting_program_id: &Pubkey,
     payer_key: &Pubkey,
-    vesting_program_account: &Pubkey,
+    vesting_account: &Pubkey,
     seeds:[u8; 32],
     number_of_schedules: u64
 ) -> Result<Instruction, ProgramError> {
@@ -181,7 +181,7 @@ pub fn init(
     let accounts = vec![
         AccountMeta::new_readonly(*system_program_id, false),
         AccountMeta::new(*payer_key, true),
-        AccountMeta::new(*vesting_program_account, false)
+        AccountMeta::new(*vesting_account, false)
     ];
     Ok(Instruction {
         program_id: *vesting_program_id,

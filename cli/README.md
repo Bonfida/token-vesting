@@ -5,13 +5,16 @@ KEYS:
 token_mint: 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC
 
 source_owner: ~/.config/solana/id.json
+Pubkey: FbqE3zeiu8ccBgt1xA6F5Yx8bq5T1D5j9eUcqFs4Dsvb
 source_token: EWrBFuSdmMC3wQKvWaCUTLbDhQT3Mpmw2CVViK4P5Xk2
 
 destination_owner: ~/.config/solana/id_dest.json
-dest_token: An2CVh3tm13Ld1EKKfiFE6udNFjmZNTSAzM4QzAdqCVZ
+Pubkey: 8vBVs9hATt4C4DeMfheiqJ7kJhX9JQffDQ9bJW4dN7nX
+dest_token: 9dFttH4GjGHqNxfpiRB5m59YdvH9ydHq9cJ6c6v2JR3p
 
 new_destination_owner: ~/.config/solana/id_new_dest.json
-dest_token: B1cCkRiCe6j3gLjR3oWQvqCGvuM9eLp3FY7CQQYGJr1C
+Pubkey: 8bVoQtWUWqeNZcBSTNnWikxcqBzmyNVXVdU148DLDCYG
+new_dest_token: CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh
 
 CMDS (don't forget the url):
 
@@ -22,49 +25,49 @@ solana airdrop 10 --url https://devnet.solana.com ~/.config/solana/id.json
 solana deploy ../program/target/deploy/token_vesting.so --url https://devnet.solana.com
 
 spl-token create-token
-spl-token create-account MINT --url https://devnet.solana.com KEYPAIR
+spl-token create-account 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC --url https://devnet.solana.com --owner KEYPAIR
 spl-token mint 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC 100 --url https://devnet.solana.com KEYPAIR
 
 
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
---program_id HpghgSYBipxHKMVRkuLv3YeVpx7bDphsK7VQVjeNQNw3                           \
---seed 11111111111114512345123451234512                                             \
+--program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
+--seed 11111111111111111145123451234512                                             \
 create                                                                              \
 --mint_address 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC                         \
 --source_owner ~/.config/solana/id.json                                             \
---source_token_address EWrBFuSdmMC3wQKvWaCUTLbDhQT3Mpmw2CVViK4P5Xk2                 \
---destination_token_address An2CVh3tm13Ld1EKKfiFE6udNFjmZNTSAzM4QzAdqCVZ            \
---amounts 2,!                                                                       \
---release-heights 1,!                                                               \
---payer ~/.config/solana/id.json" | bash                                    
+--destination_address 8vBVs9hATt4C4DeMfheiqJ7kJhX9JQffDQ9bJW4dN7nX                  \
+--amounts 2,1,3,!                                                                   \
+--release-heights 1,28504431,28506000,!                                             \
+--payer ~/.config/solana/id.json" | bash               
 
 
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
---program_id HpghgSYBipxHKMVRkuLv3YeVpx7bDphsK7VQVjeNQNw3                           \
---seed 11111111111114512345123451234512                                             \
-info" | bash                                                                    
+--program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
+--seed 11111111111111111145123451234512                                             \
+info" | bash                                          
 
 
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
---program_id HpghgSYBipxHKMVRkuLv3YeVpx7bDphsK7VQVjeNQNw3                           \
---seed 11111111111114512345123451234512                                             \
+--program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
+--seed 11111111111111111145123451234512                                             \
 change-destination                                                                  \
 --current_destination_owner ~/.config/solana/id_dest.json                           \
---new_destination_address B1cCkRiCe6j3gLjR3oWQvqCGvuM9eLp3FY7CQQYGJr1C              \
+--new_destination_token_address CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh        \
 --payer ~/.config/solana/id.json" | bash                           
 
 
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
---program_id HpghgSYBipxHKMVRkuLv3YeVpx7bDphsK7VQVjeNQNw3                           \
---seed 11111111111114512345123451234512                                             \
+--program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
+--seed 11111111111111111145123451234512                                             \
 unlock                                                                              \
 --payer ~/.config/solana/id.json" | bash
 
-
+// TODO config file parsing
+// TODO Make Slot height relative?
 
 LINKS:
 

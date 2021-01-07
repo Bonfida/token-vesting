@@ -1,0 +1,20 @@
+[package]
+name = "token-vesting-fuzz"
+version = "0.1.0"
+authors = ["Elliott Benisty <elliott@bonfida.com>", "Lucas Chaumeny <lucas@bonfida.com>"]
+publish = false
+edition = "2018"
+
+[dependencies]
+honggfuzz = { version = "0.5" }
+arbitrary = { version = "0.4", features = ["derive"] }
+solana-program = "1.5.0"
+spl-token = {version = "3.0.1", features = ["no-entrypoint"]}
+spl-associated-token-account = {version = "1.0.2", features = ["no-entrypoint"]}
+token-vesting =  { version = "0.1.0", path="..", features=["no-entrypoint", "fuzz"] }
+
+[[bin]]
+name = "vesting"
+path = "src/vesting.rs"
+test = false
+doc = false
