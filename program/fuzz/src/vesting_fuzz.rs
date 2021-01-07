@@ -40,7 +40,9 @@ struct FuzzInstruction {
     vesting_token_account_key: AccountId,                   // Unused for now
     source_token_account_owner_key: AccountId,
     source_token_account_key: AccountId,
-    destination_token_account_key: AccountId,
+    destination_token_owner_key: AccountId,
+    destination_token_key: AccountId,
+    new_destination_token_key: AccountId,
     mint_key: AccountId,
     schedules: Vec<Schedule>,
     payer_key: AccountId,
@@ -56,7 +58,7 @@ type AccountId = u8;
 
 #[tokio::main]
 async fn main() {
-    
+
     // Set up the fixed test environment
     let token_vesting_testenv = TokenVestingEnv {
         system_program_id: system_program::id(),
@@ -91,11 +93,12 @@ async fn run_fuzz_instructions(
     // let mut vesting_token_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut source_token_account_owner_keys: HashMap<AccountId, Keypair> = HashMap::new();
     let mut source_token_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
-    let mut destination_token_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
+    let mut destination_token_owner_keys: HashMap<AccountId, Pubkey> = HashMap::new();
+    let mut destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
+    let mut new_destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut mint_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut payer_keys: HashMap<AccountId, Keypair> = HashMap::new();
     
-
 
     for fuzz_instruction in fuzz_instructions {
         // vesting_account_keys
@@ -110,10 +113,16 @@ async fn run_fuzz_instructions(
         source_token_account_keys
             .entry(fuzz_instruction.source_token_account_key)
             .or_insert_with(|| Pubkey::new_unique());
-        destination_token_account_keys
-            .entry(fuzz_instruction.destination_token_account_key)
+        destination_token_owner_keys
+            .entry(fuzz_instruction.destination_token_owner_key)
             .or_insert_with(|| Pubkey::new_unique());
-        mint_keys
+        destination_token_keys
+            .entry(fuzz_instruction.destination_token_key)
+            .or_insert_with(|| Pubkey::new_unique());
+        new_destination_token_keys
+            .entry(fuzz_instruction.new_destination_token_key)
+            .or_insert_with(|| Pubkey::new_unique());
+         mint_keys
             .entry(fuzz_instruction.mint_key)
             .or_insert_with(|| Pubkey::new_unique());
         payer_keys
@@ -138,26 +147,18 @@ async fn run_fuzz_instructions(
             source_token_account_keys.get(
                 &fuzz_instruction.source_token_account_key
             ).unwrap(),
-            destination_token_account_keys.get(
-                &fuzz_instruction.destination_token_account_key
+            destination_token_owner_keys.get(
+                &fuzz_instruction.destination_token_owner_key
+            ).unwrap(),
+            destination_token_keys.get(
+                &fuzz_instruction.destination_token_key
+            ).unwrap(),
+            new_destination_token_keys.get(
+                &fuzz_instruction.new_destination_token_key
             ).unwrap(),
             payer_keys.get(&fuzz_instruction.payer_key).unwrap()
         ).await;
     }
-
-    // // check total token a and b amounts
-    // let after_total_token_a = token_a_accounts
-    //     .values()
-    //     .map(get_token_balance)
-    //     .sum::<u64>()
-    //     + get_token_balance(&token_swap.token_a_account);
-    // assert_eq!(before_total_token_a, after_total_token_a);
-    // let after_total_token_b = token_b_accounts
-    //     .values()
-    //     .map(get_token_balance)
-    //     .sum::<u64>()
-    //     + get_token_balance(&token_swap.token_b_account);
-    // assert_eq!(before_total_token_b, after_total_token_b);
 }
 
 async fn run_fuzz_instruction(
@@ -165,10 +166,12 @@ async fn run_fuzz_instruction(
     banks_client: BanksClient,
     recent_blockhash: Hash,
     fuzz_instruction: &FuzzInstruction,
-    mint_key: &Pubkey,
+    mint_key: &Pubkey,   // TODO use the fuzzinstruction data
     source_token_account_owner_key: &Keypair,
     source_token_account_key: &Pubkey,
-    destination_token_account_key: &Pubkey,
+    destination_token_owner_key: &Pubkey,
+    destination_token_key: &Pubkey,
+    new_destination_token_key: &Pubkey,
     payer_key: &Keypair
 ) {
 
@@ -178,7 +181,7 @@ async fn run_fuzz_instruction(
         &token_vesting_testenv.vesting_program_id
     );
     seeds[31] = bump;
-    let vesting_token_account = get_associated_token_address(
+    let vesting_token_key = get_associated_token_address(
         &vesting_account_key,
         &mint_key
     );
@@ -206,9 +209,94 @@ async fn run_fuzz_instruction(
                 &[payer_key],
                 recent_blockhash
             );
-            banks_client.to_owned().process_transaction(init_transaction).await;
+            banks_client.to_owned().process_transaction(init_transaction).await.unwrap();
+            panic!()
         }
-        _ => ()
+        FuzzInstruction {
+            instruction: VestingInstruction::Create {
+                seeds,
+                mint_address,
+                destination_token_address,
+                schedules
+            },
+            ..
+        } => {
+            // Initialize the vesting program account
+            let create_instruction = [create(
+                &token_vesting_testenv.vesting_program_id,
+                &token_vesting_testenv.token_program_id,
+                &vesting_account_key,
+                &vesting_token_key,
+                &source_token_account_owner_key.pubkey(),
+                source_token_account_key,
+                destination_token_key,
+                mint_address,
+                schedules.clone().to_vec(),
+                *seeds,
+            ).unwrap()
+            ];
+            let mut init_transaction = Transaction::new_with_payer(
+                &create_instruction,
+                Some(&payer_key.pubkey()),
+            );
+            init_transaction.partial_sign(
+                &[payer_key],
+                recent_blockhash
+            );
+            banks_client.to_owned().process_transaction(init_transaction).await.unwrap();
+            panic!()
+        },
+        FuzzInstruction {
+            instruction: VestingInstruction::Unlock{ seeds },
+            ..
+        } => {
+            // Initialize the vesting program account
+            let init_instruction = [unlock(
+                &token_vesting_testenv.vesting_program_id,
+                &token_vesting_testenv.token_program_id,
+                &token_vesting_testenv.sysvarclock_program_id,
+                &vesting_account_key,
+                &vesting_token_key,
+                destination_token_key,
+                *seeds
+            ).unwrap()
+            ];
+            let mut init_transaction = Transaction::new_with_payer(
+                &init_instruction,
+                Some(&payer_key.pubkey()),
+            );
+            init_transaction.partial_sign(
+                &[payer_key],
+                recent_blockhash
+            );
+            banks_client.to_owned().process_transaction(init_transaction).await.unwrap();
+            panic!()
+        },
+        FuzzInstruction {
+            instruction: VestingInstruction::ChangeDestination{ seeds },
+            ..
+        } => {
+            // Initialize the vesting program account
+            let init_instruction = [change_destination(
+                &token_vesting_testenv.vesting_program_id,
+                &vesting_account_key,
+                &destination_token_owner_key,
+                &destination_token_key,
+                new_destination_token_key,
+                *seeds
+            ).unwrap()
+            ];
+            let mut init_transaction = Transaction::new_with_payer(
+                &init_instruction,
+                Some(&payer_key.pubkey()),
+            );
+            init_transaction.partial_sign(
+                &[payer_key],
+                recent_blockhash
+            );
+            banks_client.to_owned().process_transaction(init_transaction).await.unwrap();
+            panic!()
+        }
     };
     // result
     //     .map_err(|e| {
