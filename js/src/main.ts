@@ -17,6 +17,7 @@ import {
   mintAddress,
   schedule,
   signTransactionInstructions,
+  walletSeed,
 } from './utils';
 
 async function findAssociatedTokenAddress(
@@ -56,18 +57,18 @@ async function create(
   const numberOfSchedules = schedules.length;
 
   // Find the non reversible public key for the vesting contract via the seed
-  let vestingPubkey = await PublicKey.createProgramAddress(
+  const [pubkey, bump] = await PublicKey.findProgramAddress(
     vestingSeed,
     programId,
   );
 
-  console.log('Vesting token account pubkey: ', vestingPubkey.toBase58());
+  console.log('Vesting token account pubkey: ', pubkey.toBase58());
   let instruction = [
     createInitInstruction(
       SystemProgram.programId,
       programId,
       payer.publicKey,
-      vestingPubkey,
+      pubkey,
       vestingSeed,
       schedules.length,
     ),
