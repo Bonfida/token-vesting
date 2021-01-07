@@ -12,7 +12,7 @@ export function createInitInstruction(
   vestingProgramId: PublicKey,
   payerKey: PublicKey,
   vestingAccountKey: PublicKey,
-  seeds: Array<Buffer>,
+  seeds: Array<Buffer | Uint8Array>,
   numberOfSchedules: number,
 ): TransactionInstruction {
   let buffers = [
@@ -56,7 +56,7 @@ export function createCreateInstruction(
   destinationTokenAccountKey: PublicKey,
   mintAddress: PublicKey,
   schedules: Array<Schedule>,
-  seeds: Array<Buffer>,
+  seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
   let buffers = [
     Buffer.from(Int8Array.from([1]).buffer),
@@ -109,7 +109,7 @@ export function createUnlockInstruction(
   vestingAccountKey: PublicKey,
   vestingTokenAccountKey: PublicKey,
   destinationTokenAccountKey: PublicKey,
-  seeds: Array<Buffer>,
+  seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
   const data = Buffer.concat(seeds);
 
@@ -153,7 +153,7 @@ export function createChangeDestinationInstruction(
   currentDestinationTokenAccountOwner: PublicKey,
   currentDestinationTokenAccount: PublicKey,
   targetDestinationTokenAccount: PublicKey,
-  seeds: Array<Buffer>,
+  seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
   const data = Buffer.concat(seeds);
 
@@ -202,8 +202,10 @@ class ChangeDestination {
 }
 
 export class Schedule {
-  release_height: u64;
-  amount: u64;
+  // @ts-ignore
+  release_height: Numberu64 = new Numberu64(10000);
+  // @ts-ignore
+  amount: Numberu64 = new Numberu64(10000);
 
   toBuffer() {
     return Buffer.concat([
