@@ -10,11 +10,19 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "rollup -c rollup.config.ts"
+    "build": "rollup -c rollup.config.ts",
+    "lint": "npm run pretty && eslint .",
+    "lint:fix": "npm run pretty:fix && eslint . --fix",
+    "pretty": "prettier --check 'src/*.[jt]s'",
+    "pretty:fix": "prettier --write 'src/*.[jt]s'"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
     "@types/node": "^14.14.20",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.17.0",
+    "eslint-plugin-import": "^2.22.1",
+    "prettier": "^2.2.1",
     "rollup": "^2.36.1",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
