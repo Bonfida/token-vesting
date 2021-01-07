@@ -8,7 +8,7 @@ import {
   Connection,
   Transaction,
   TransactionInstruction,
-  PublicKey
+  PublicKey,
 } from '@solana/web3.js';
 import { Schedule } from './instructions';
 
@@ -87,21 +87,20 @@ export const destinationPubkey = new PublicKey(
   '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
 );
 
-export const schedule: Schedule = {releaseHeight: new Numberu64(10000), amount: new Numberu64(1)} ;
-
-
+export const schedule: Schedule = {
+  releaseHeight: new Numberu64(29507188),
+  amount: new Numberu64(10),
+};
 
 // Sign stuff
 
-export const signTransactionInstruction = async (
+export const signTransactionInstructions = async (
   connection: Connection,
   account: Account,
   txInstructions: Array<TransactionInstruction>,
 ) => {
-  const tx = new Transaction()
-  txInstructions.forEach(txInstruction=>{
-    console.log("txInstruction",txInstruction.keys)
-    tx.add(txInstruction)})
+  const tx = new Transaction();
+  tx.add(...txInstructions);
   return await connection.sendTransaction(tx, [account], {
     preflightCommitment: 'single',
   });

@@ -16,7 +16,7 @@ import {
   destinationPubkey,
   mintAddress,
   schedule,
-  signTransactionInstruction
+  signTransactionInstructions,
 } from './utils';
 
 async function findAssociatedTokenAddress(
@@ -75,9 +75,7 @@ async function create(
   return instruction;
 }
 
-
-
-const test = async (): Promise<void> =>{
+const test = async (): Promise<void> => {
   const instructions = await create(
     SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
     [Buffer.from('11111111111114512345123451234512', 'hex')],
@@ -88,7 +86,11 @@ const test = async (): Promise<void> =>{
     mintAddress,
     [schedule],
   );
-  const signed = await signTransactionInstruction(connection, account, instructions)
-}
+  const signed = await signTransactionInstructions(
+    connection,
+    account,
+    instructions,
+  );
+};
 
-test()
+test();
