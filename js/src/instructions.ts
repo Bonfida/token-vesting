@@ -1,5 +1,5 @@
-import {u64} from '@solana/spl-token';
-import {PublicKey, TransactionInstruction} from '@solana/web3.js';
+import { u64 } from '@solana/spl-token';
+import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 import * as BufferLayout from 'buffer-layout';
 
 export enum Instruction {

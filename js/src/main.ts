@@ -1,7 +1,7 @@
-import {Account, PublicKey, SystemProgram} from '@solana/web3.js';
-import {TOKEN_PROGRAM_ID, u64} from '@solana/spl-token';
+import { Account, PublicKey, SystemProgram } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID, u64 } from '@solana/spl-token';
 
-import {createInitInstruction, Schedule} from './instructions';
+import { createInitInstruction, Schedule } from './instructions';
 
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
