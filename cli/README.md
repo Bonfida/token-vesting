@@ -2,6 +2,8 @@
 
 KEYS: 
 
+Program_id: Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ
+
 token_mint: 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC
 
 source_owner: ~/.config/solana/id.json
