@@ -9,12 +9,15 @@ edition = "2018"
 honggfuzz = { version = "0.5" }
 arbitrary = { version = "0.4", features = ["derive"] }
 solana-program = "1.5.0"
+solana-sdk = "1.5.0"
+futures = "0.3"
+solana-program-test = "1.5.0"
 spl-token = {version = "3.0.1", features = ["no-entrypoint"]}
 spl-associated-token-account = {version = "1.0.2", features = ["no-entrypoint"]}
 token-vesting =  { version = "0.1.0", path="..", features=["no-entrypoint", "fuzz"] }
 
 [[bin]]
 name = "vesting"
-path = "src/vesting.rs"
+path = "src/vesting_fuzz.rs"
 test = false
 doc = false

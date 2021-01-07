@@ -34,7 +34,7 @@ spl-token mint 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC 100 --url https://de
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111145123451234512                                             \
+--seed 11111111111111111115123451234512                                             \
 create                                                                              \
 --mint_address 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC                         \
 --source_owner ~/.config/solana/id.json                                             \
@@ -47,7 +47,7 @@ create                                                                          
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111145123451234512                                             \
+--seed 11111111111111111115123451234512                                             \
 info" | bash                                          
 
 

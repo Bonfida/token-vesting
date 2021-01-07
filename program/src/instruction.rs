@@ -5,6 +5,33 @@ use solana_program::{instruction::{AccountMeta, Instruction}, msg, program_error
 use std::mem::size_of;
 use std::convert::TryInto;
 
+#[cfg(feature = "fuzz")]
+use arbitrary::Arbitrary;
+
+#[cfg(feature = "fuzz")]
+impl Arbitrary for VestingInstruction {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let key_bytes: [u8;32] = u.arbitrary()?;
+        let mint_address: Pubkey = Pubkey::new(&key_bytes);
+        let key_bytes: [u8;32] = u.arbitrary()?;
+        let destination_token_address: Pubkey = Pubkey::new(&key_bytes);
+        let seeds: [u8;32] = u.arbitrary()?;
+        let number_of_schedules = u.arbitrary()?;
+        let schedules = u.arbitrary()?;
+
+        let choice = u.choose(&[0, 1, 2, 3])?;
+        match choice {
+            0 => return Ok(Self::Init{ seeds, number_of_schedules }),
+            1 => return Ok(Self::Create{ seeds, mint_address, destination_token_address, schedules }),
+            2 => return Ok(Self::Unlock{ seeds }),
+            3 => return Ok(Self::ChangeDestination{ seeds }),
+            _ => ()
+        }
+        return Ok(Self::Init{ seeds, number_of_schedules })
+    }
+}
+
+#[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Schedule {
@@ -25,7 +52,9 @@ pub enum VestingInstruction {
     ///   0. `[]` The system program account
     ///   1. `[signer]` The fee payer account
     Init {
+        // The seed used to derive the vesting accounts address
         seeds: [u8; 32],
+        // The number of release schedules for this contract to hold
         number_of_schedules: u64
     },
     /// Creates a new vesting schedule contract
