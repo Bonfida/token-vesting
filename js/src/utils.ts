@@ -98,7 +98,7 @@ export const signTransactionInstructions = async (
   connection: Connection,
   account: Account,
   txInstructions: Array<TransactionInstruction>,
-) => {
+): Promise<string> => {
   const tx = new Transaction();
   tx.add(...txInstructions);
   return await connection.sendTransaction(tx, [account], {

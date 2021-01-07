@@ -1,5 +1,6 @@
 import { u64 } from '@solana/spl-token';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
+
 import { Numberu64 } from './utils';
 
 export enum Instruction {
@@ -21,6 +22,7 @@ export function createInitInstruction(
     // @ts-ignore
     new Numberu64(numberOfSchedules).toBuffer(),
   ];
+
   const data = Buffer.concat(buffers);
   const keys = [
     {
