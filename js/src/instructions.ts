@@ -202,10 +202,8 @@ class ChangeDestination {
 }
 
 export class Schedule {
-  // @ts-ignore
-  releaseHeight: Numberu64 = new Numberu64(60496294);
-  // @ts-ignore
-  amount: Numberu64 = new Numberu64(1);
+  releaseHeight: Numberu64;
+  amount: Numberu64;
 
   toBuffer() {
     return Buffer.concat([

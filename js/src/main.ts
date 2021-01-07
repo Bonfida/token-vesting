@@ -16,6 +16,7 @@ import {
   destinationPubkey,
   mintAddress,
   schedule,
+  signTransactionInstruction
 } from './utils';
 
 async function findAssociatedTokenAddress(
@@ -61,7 +62,6 @@ async function create(
   );
 
   console.log('Vesting token account pubkey: ', vestingPubkey.toBase58());
-
   let instruction = [
     createInitInstruction(
       SystemProgram.programId,
@@ -75,13 +75,20 @@ async function create(
   return instruction;
 }
 
-const instruction = create(
-  SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-  [Buffer.from('11111111111114512345123451234512', 'hex')],
-  account,
-  account,
-  tokenPubkey,
-  destinationPubkey,
-  mintAddress,
-  [schedule],
-);
+
+
+const test = async (): Promise<void> =>{
+  const instructions = await create(
+    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+    [Buffer.from('11111111111114512345123451234512', 'hex')],
+    account,
+    account,
+    tokenPubkey,
+    destinationPubkey,
+    mintAddress,
+    [schedule],
+  );
+  const signed = await signTransactionInstruction(connection, account, instructions)
+}
+
+test()
