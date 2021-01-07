@@ -68,7 +68,7 @@ export const getAccountFromSeed = (seed: Buffer) => {
 };
 
 // Test params
-export const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
+export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
   'Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ',
 );
 export const walletSeed = Buffer.from(

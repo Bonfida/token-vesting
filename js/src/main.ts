@@ -11,7 +11,7 @@ import {
   getAccountFromSeed,
   connection,
   account,
-  SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+  VESTING_PROGRAM_ID,
   tokenPubkey,
   destinationPubkey,
   mintAddress,
@@ -31,7 +31,7 @@ async function findAssociatedTokenAddress(
         TOKEN_PROGRAM_ID.toBuffer(),
         tokenMintAddress.toBuffer(),
       ],
-      SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+      VESTING_PROGRAM_ID,
     )
   )[0];
 }
@@ -58,7 +58,7 @@ async function create(
 
   // Find the non reversible public key for the vesting contract via the seed
   const [pubkey, bump] = await PublicKey.findProgramAddress(
-    vestingSeed,
+    vestingSeed.slice(0, 31),
     programId,
   );
 
@@ -70,7 +70,7 @@ async function create(
       programId,
       payer.publicKey,
       pubkey,
-      [Buffer.from(pubkey.toBase58().slice(0, 31) + bump.toString(), 'hex')],
+      [Buffer.from(vestingSeed.toString() + bump, 'hex')],
       schedules.length,
     ),
   ];
@@ -79,7 +79,7 @@ async function create(
 
 const test = async (): Promise<void> => {
   const instructions = await create(
-    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+    VESTING_PROGRAM_ID,
     [Buffer.from('11111111111114512345123451234512', 'hex')],
     account,
     account,
