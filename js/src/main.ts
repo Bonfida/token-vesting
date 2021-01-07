@@ -26,7 +26,7 @@ const getAccountFromSeed = (seed: Buffer) => {
   return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
 };
 
-const seed = getDerivedSeed(walletSeed)
+const seed = getDerivedSeed(walletSeed);
 const account = getAccountFromSeed(walletSeed);
 const tokenPubkey = new PublicKey(
   '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
@@ -70,15 +70,13 @@ async function create(
     );
   }
 
-
   const numberOfSchedules = schedules.length;
-  console.log(vestingSeed)
+  console.log(vestingSeed);
   // Find the non reversible public key for the vesting contract via the seed
   let vestingPubkey = await PublicKey.createProgramAddress(
     vestingSeed,
     programId,
   );
-
 
   console.log('Vesting token account pubkey: ', vestingPubkey);
 
@@ -96,7 +94,7 @@ async function create(
 
 create(
   SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-  [Buffer.from("11111111111114512345123451234512", "hex")],
+  [Buffer.from('11111111111114512345123451234512', 'hex')],
   account,
   account,
   tokenPubkey,
