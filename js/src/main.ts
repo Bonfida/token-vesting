@@ -56,14 +56,14 @@ async function create(
   }
 
   const numberOfSchedules = schedules.length;
-  console.log(vestingSeed);
+
   // Find the non reversible public key for the vesting contract via the seed
   let vestingPubkey = await PublicKey.createProgramAddress(
     vestingSeed,
     programId,
   );
 
-  console.log('Vesting token account pubkey: ', vestingPubkey);
+  console.log('Vesting token account pubkey: ', vestingPubkey.toBase58());
 
   let instruction = [
     createInitInstruction(
