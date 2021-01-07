@@ -3,7 +3,7 @@ import BN from 'bn.js';
 import assert from 'assert';
 import nacl from 'tweetnacl';
 import * as bip32 from 'bip32';
-import { Account } from '@solana/web3.js';
+import { Account, Connection } from '@solana/web3.js';
 
 export class Numberu64 extends BN {
   /**
@@ -36,6 +36,15 @@ export class Numberu64 extends BN {
     );
   }
 }
+
+// Connection
+
+const ENDPOINTS = {
+  mainnet: 'https://solana-api.projectserum.com',
+  devnet: 'https://devnet.solana.com',
+};
+
+export const connection = new Connection(ENDPOINTS.devnet);
 
 // For accounts imported from Sollet.io
 
