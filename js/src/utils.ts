@@ -3,7 +3,12 @@ import BN from 'bn.js';
 import assert from 'assert';
 import nacl from 'tweetnacl';
 import * as bip32 from 'bip32';
-import { Account, Connection } from '@solana/web3.js';
+import {
+  Account,
+  Connection,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js';
 
 export class Numberu64 extends BN {
   /**
@@ -58,4 +63,39 @@ export const getAccountFromSeed = (seed: Buffer) => {
   const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
     .privateKey;
   return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
+};
+
+// Test params
+export const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+);
+const walletSeed = Buffer.from(
+  'cf556a77183c563b77986835d39d600a8d56998254d42d95888f91df9bb20fabc5da8e06f59a202bf23fb99e3cd10d2ea292437baa80d9d78c7e0f6f2eaf5621',
+  'hex',
+);
+export const account = getAccountFromSeed(walletSeed);
+export const tokenPubkey = new PublicKey(
+  '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
+);
+export const mintAddress = new PublicKey(
+  'GAVRiTwa55gNrVZwsRzLGkCmLC1qvrFtUAfD1ARz5spP',
+);
+
+export const destinationPubkey = new PublicKey(
+  '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
+);
+
+export const schedule = new Schedule();
+
+// Sign stuff
+
+export const signTransactionInstruction = async (
+  connection: Connection,
+  account: Account,
+  txInstruction: TransactionInstruction,
+) => {
+  const tx = new Transaction().add(txInstruction);
+  return await connection.sendTransaction(tx, [account], {
+    preflightCommitment: 'single',
+  });
 };

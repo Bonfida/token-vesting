@@ -1,29 +1,22 @@
-import { Account, PublicKey, SystemProgram } from '@solana/web3.js';
+import {
+  Account,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { createInitInstruction, Schedule } from './instructions';
-import { getDerivedSeed, getAccountFromSeed, connection } from './utils';
-
-// Test params
-const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
-  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
-);
-const walletSeed = Buffer.from(
-  'cf556a77183c563b77986835d39d600a8d56998254d42d95888f91df9bb20fabc5da8e06f59a202bf23fb99e3cd10d2ea292437baa80d9d78c7e0f6f2eaf5621',
-  'hex',
-);
-export const account = getAccountFromSeed(walletSeed);
-export const tokenPubkey = new PublicKey(
-  '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
-);
-export const mintAddress = new PublicKey(
-  'GAVRiTwa55gNrVZwsRzLGkCmLC1qvrFtUAfD1ARz5spP',
-);
-
-export const destinationPubkey = new PublicKey(
-  '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
-);
-
-export const schedule = new Schedule();
+import {
+  getDerivedSeed,
+  getAccountFromSeed,
+  connection,
+  account,
+  SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+  tokenPubkey,
+  destinationPubkey,
+  mintAddress,
+  schedule,
+} from './utils';
 
 async function findAssociatedTokenAddress(
   walletAddress: PublicKey,
@@ -79,9 +72,10 @@ async function create(
       schedules.length,
     ),
   ];
+  return instruction;
 }
 
-create(
+const instruction = create(
   SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
   [Buffer.from('11111111111114512345123451234512', 'hex')],
   account,
