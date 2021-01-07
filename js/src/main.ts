@@ -56,17 +56,17 @@ async function create(
   programId: PublicKey,
   vestingSeed: Array<Buffer | Uint8Array>,
   payer: Account,
-  source_token_owner: Account,
-  possible_source_token_pubkey: PublicKey | null,
-  destination_token_pubkey: PublicKey,
-  mint_address: PublicKey,
+  sourceTokenOwner: Account,
+  possibleSourceTokenPubkey: PublicKey | null,
+  destinationTokenPubkey: PublicKey,
+  mintAddress: PublicKey,
   schedules: Array<Schedule>,
 ) {
   // If no source token account was given, use the associated source account
-  if (possible_source_token_pubkey == null) {
-    possible_source_token_pubkey = await findAssociatedTokenAddress(
-      source_token_owner.publicKey,
-      mint_address,
+  if (possibleSourceTokenPubkey == null) {
+    possibleSourceTokenPubkey = await findAssociatedTokenAddress(
+      sourceTokenOwner.publicKey,
+      mintAddress,
     );
   }
 
@@ -96,7 +96,7 @@ async function create(
 
 create(
   SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-  [seed],
+  [Buffer.from("11111111111114512345123451234512", "hex")],
   account,
   account,
   tokenPubkey,
