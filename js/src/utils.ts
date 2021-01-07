@@ -1,6 +1,8 @@
 // @ts-nocheck
 import BN from 'bn.js';
 import assert from 'assert';
+import nacl from 'tweetnacl';
+import * as bip32 from 'bip32';
 
 export class Numberu64 extends BN {
   /**
@@ -33,3 +35,17 @@ export class Numberu64 extends BN {
     );
   }
 }
+
+// For accounts imported from Sollet.io
+
+const getDerivedSeed = (seed: Buffer) => {
+  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
+    .privateKey;
+  return nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
+};
+
+const getAccountFromSeed = (seed: Buffer) => {
+  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
+    .privateKey;
+  return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
+};

@@ -1,9 +1,7 @@
 import { Account, PublicKey, SystemProgram } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, u64 } from '@solana/spl-token';
-import nacl from 'tweetnacl';
-import * as bip32 from 'bip32';
-
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { createInitInstruction, Schedule } from './instructions';
+import { getDerivedSeed, getAccountFromSeed } from './utils';
 
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: PublicKey = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
@@ -14,19 +12,6 @@ const walletSeed = Buffer.from(
   'hex',
 );
 
-const getDerivedSeed = (seed: Buffer) => {
-  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
-    .privateKey;
-  return nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
-};
-
-const getAccountFromSeed = (seed: Buffer) => {
-  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
-    .privateKey;
-  return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
-};
-
-const seed = getDerivedSeed(walletSeed);
 const account = getAccountFromSeed(walletSeed);
 const tokenPubkey = new PublicKey(
   '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
