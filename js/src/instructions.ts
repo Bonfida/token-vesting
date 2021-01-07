@@ -188,8 +188,8 @@ export function createChangeDestinationInstruction(
 
 class Create {
   seeds: Array<Buffer>;
-  mint_address: PublicKey;
-  destination_token_address: PublicKey;
+  mintAddress: PublicKey;
+  destinationTokenAddress: PublicKey;
   schedules: Array<Schedule>;
 }
 
@@ -203,13 +203,13 @@ class ChangeDestination {
 
 export class Schedule {
   // @ts-ignore
-  release_height: Numberu64 = new Numberu64(10000);
+  releaseHeight: Numberu64 = new Numberu64(10000);
   // @ts-ignore
   amount: Numberu64 = new Numberu64(10000);
 
   toBuffer() {
     return Buffer.concat([
-      this.release_height.toBuffer(),
+      this.releaseHeight.toBuffer(),
       this.amount.toBuffer(),
     ]);
   }
