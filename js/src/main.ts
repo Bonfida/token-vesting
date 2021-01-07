@@ -57,8 +57,9 @@ async function create(
   const numberOfSchedules = schedules.length;
 
   // Find the non reversible public key for the vesting contract via the seed
+  vestingSeed = vestingSeed.slice(0, 31);
   const [pubkey, bump] = await PublicKey.findProgramAddress(
-    vestingSeed.slice(0, 31),
+    vestingSeed,
     programId,
   );
 
