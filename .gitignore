@@ -5,3 +5,6 @@ Cargo.lock
 
 */node_modules
 js/lib
+
+cli/target
+cli/target/.rustc_info.json
