@@ -11,25 +11,30 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "fuzz")]
 impl Arbitrary for VestingInstruction {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let key_bytes: [u8;32] = u.arbitrary()?;
-        let mint_address: Pubkey = Pubkey::new(&key_bytes);
-        let key_bytes: [u8;32] = u.arbitrary()?;
-        let destination_token_address: Pubkey = Pubkey::new(&key_bytes);
         let seeds: [u8;32] = u.arbitrary()?;
-        let number_of_schedules = u.arbitrary()?;
-        let schedules = u.arbitrary()?;
-
         let choice = u.choose(&[0, 1, 2, 3])?;
         match choice {
-            0 => return Ok(Self::Init{ seeds, number_of_schedules }),
-            1 => return Ok(Self::Create{ seeds, mint_address, destination_token_address, schedules }),
+            0 => {
+                let number_of_schedules = u.arbitrary()?;
+                return Ok(Self::Init{ seeds, number_of_schedules });
+            },
+            1 => {
+                // Limit the number of schedules according to the maximum fixed by the type of 
+                // number_schedules in processor
+                // TODO
+                let schedules: [Schedule; 10] = u.arbitrary()?;
+                let key_bytes: [u8;32] = u.arbitrary()?;
+                let mint_address: Pubkey = Pubkey::new(&key_bytes);
+                let key_bytes: [u8;32] = u.arbitrary()?;
+                let destination_token_address: Pubkey = Pubkey::new(&key_bytes);
+                return Ok(Self::Create{ seeds, mint_address, destination_token_address, schedules: schedules.to_vec() })
+            },
             2 => return Ok(Self::Unlock{ seeds }),
-            3 => return Ok(Self::ChangeDestination{ seeds }),
-            _ => ()
+            _ => return Ok(Self::ChangeDestination{ seeds })
         }
-        return Ok(Self::Init{ seeds, number_of_schedules })
     }
 }
+
 
 #[cfg_attr(feature = "fuzz", derive(Arbitrary))]
 #[repr(C)]

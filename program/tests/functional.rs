@@ -115,7 +115,9 @@ async fn test_token_vesting() {
     ];
 
     let schedules = vec![
-        Schedule {amount: 20, release_height: 0}
+        Schedule {amount: 20, release_height: 0},
+        Schedule {amount: 20, release_height: 2},
+        Schedule {amount: 20, release_height: 5}
     ];
 
     let test_instructions = [
