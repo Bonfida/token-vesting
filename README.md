@@ -15,7 +15,12 @@
 - `cli` : CLI tool to interact with on-chain token vesting contract
 - `js` : JavaScript binding to interact with on-chain token vesting contract
 - `program` : The BPF compatible token vesting on-chain program/smart contract
-  
+
+## TODO: internal
+
+- We are currently using one-word seeds, which amounts to a 256 bit contract identifier, which is sufficient. We should refactor our functions to take in an array of bytes instead of
+ an array of array of bytes. Printing the seed should be done in base 58 like a public key to remain compact. We don't need a list of words since this identifier will not be private and is unencrypted on the blockchain.
+
 ## TODO: Open issues for the following bugs
 
 - `Instruction::new` serializes vector data wrongly (adds vector length as prefix to byte array)
