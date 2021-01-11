@@ -66,7 +66,7 @@ async fn test_token_vesting() {
         &payer.pubkey(),
         &vesting_account_key,
         seeds,
-        1
+        3
     ).unwrap()
     ];
     let mut init_transaction = Transaction::new_with_payer(
@@ -116,8 +116,8 @@ async fn test_token_vesting() {
 
     let schedules = vec![
         Schedule {amount: 20, release_height: 0},
-        Schedule {amount: 20, release_height: 2},
-        Schedule {amount: 20, release_height: 5}
+        // Schedule {amount: 20, release_height: 2},
+        // Schedule {amount: 20, release_height: 5}
     ];
 
     let test_instructions = [

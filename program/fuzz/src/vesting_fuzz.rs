@@ -200,7 +200,7 @@ fn run_fuzz_instruction(
 
     // Execute the fuzzing in a more restrained way in order to go deeper into the program branches
     // For each possible fuzz instruction we first instantiate the needed accounts for the instruction
-    if fuzz_instruction.correct_inputs {
+    if true {
 
         let mut correct_seeds = fuzz_instruction.seeds;
         let (correct_vesting_account_key, bump) = Pubkey::find_program_address(
@@ -215,10 +215,7 @@ fn run_fuzz_instruction(
 
         match fuzz_instruction {
 
-            FuzzInstruction {
-                instruction: VestingInstruction::Init{ .. },
-                ..
-            } => {
+            _ => {
                 return vec![init_fuzzinstruction(
                     token_vesting_testenv,
                     fuzz_instruction,
