@@ -1,5 +1,6 @@
 import { u64 } from '@solana/spl-token';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
+import { Schedule } from './state';
 
 import { Numberu64 } from './utils';
 
@@ -7,6 +8,10 @@ export enum Instruction {
   Init,
   Create,
 }
+
+
+
+
 
 export function createInitInstruction(
   systemProgramId: PublicKey,
@@ -41,6 +46,7 @@ export function createInitInstruction(
       isWritable: true,
     },
   ];
+  console.log(data.toString('hex'));
   return new TransactionInstruction({
     keys,
     programId: vestingProgramId,
@@ -66,9 +72,7 @@ export function createCreateInstruction(
     mintAddress.toBuffer(),
     destinationTokenAccountKey.toBuffer(),
   ];
-  schedules.map(s => {
-    buffers.push(s.toBuffer());
-  });
+  schedules.forEach(s => buffers.push(s.toBuffer()));
   const data = Buffer.concat(buffers);
   const keys = [
     {
@@ -186,31 +190,4 @@ export function createChangeDestinationInstruction(
     programId: vestingProgramId,
     data,
   });
-}
-
-class Create {
-  seeds: Array<Buffer>;
-  mintAddress: PublicKey;
-  destinationTokenAddress: PublicKey;
-  schedules: Array<Schedule>;
-}
-
-class Unlock {
-  seeds: Array<Buffer>;
-}
-
-class ChangeDestination {
-  seeds: Array<Buffer>;
-}
-
-export class Schedule {
-  releaseHeight: Numberu64;
-  amount: Numberu64;
-
-  toBuffer() {
-    return Buffer.concat([
-      this.releaseHeight.toBuffer(),
-      this.amount.toBuffer(),
-    ]);
-  }
 }

@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
   PublicKey,
 } from '@solana/web3.js';
-import { Schedule } from './instructions';
+import { Schedule } from './state';
 
 export class Numberu64 extends BN {
   /**
@@ -96,12 +96,14 @@ export const schedule: Schedule = {
 
 export const signTransactionInstructions = async (
   connection: Connection,
-  account: Account,
+  signers: Array<Account>,
+  feePayer: PublicKey,
   txInstructions: Array<TransactionInstruction>,
 ): Promise<string> => {
   const tx = new Transaction();
+  tx.feePayer = feePayer;
   tx.add(...txInstructions);
-  return await connection.sendTransaction(tx, [account], {
+  return await connection.sendTransaction(tx, signers, {
     preflightCommitment: 'single',
   });
 };
