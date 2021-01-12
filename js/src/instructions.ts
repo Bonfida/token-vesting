@@ -9,10 +9,6 @@ export enum Instruction {
   Create,
 }
 
-
-
-
-
 export function createInitInstruction(
   systemProgramId: PublicKey,
   vestingProgramId: PublicKey,
