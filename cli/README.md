@@ -67,9 +67,6 @@ unlock                                                                          
 --seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
 --payer ~/.config/solana/id.json" | bash
 
-// TODO config file parsing
-// TODO Make Slot height relative?
-
 LINKS:
 
 https://spl.solana.com/token
