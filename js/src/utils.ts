@@ -68,6 +68,7 @@ export const getAccountFromSeed = (seed: Buffer) => {
 };
 
 // Test params
+
 export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
   'Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ',
 );
@@ -92,7 +93,7 @@ export const schedule: Schedule = {
   amount: new Numberu64(10),
 };
 
-// Sign stuff
+// Sign transaction
 
 export const signTransactionInstructions = async (
   connection: Connection,
