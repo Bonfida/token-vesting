@@ -34,7 +34,6 @@ spl-token mint 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC 100 --url https://de
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111115123451234512                                             \
 create                                                                              \
 --mint_address 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC                         \
 --source_owner ~/.config/solana/id.json                                             \
@@ -47,15 +46,15 @@ create                                                                          
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111115123451234512                                             \
-info" | bash                                          
+info                                                                                \
+--seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5 " | bash                                          
 
 
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111145123451234512                                             \
 change-destination                                                                  \
+--seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
 --current_destination_owner ~/.config/solana/id_dest.json                           \
 --new_destination_token_address CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh        \
 --payer ~/.config/solana/id.json" | bash                           
@@ -64,8 +63,8 @@ change-destination                                                              
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
 --program_id Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ                           \
---seed 11111111111111111145123451234512                                             \
 unlock                                                                              \
+--seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
 --payer ~/.config/solana/id.json" | bash
 
 // TODO config file parsing

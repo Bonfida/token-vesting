@@ -6,12 +6,10 @@ use token_vesting::{
 use clap::{
     crate_description, crate_name, crate_version, value_t, App, AppSettings, Arg, SubCommand
 };
-use solana_client::{
-    rpc_client::RpcClient,
-};
+use solana_client::rpc_client::RpcClient;
 use solana_clap_utils::{
     input_parsers::{keypair_of, pubkey_of, value_of, values_of},
-    input_validators::{is_amount, is_keypair, is_pubkey, is_url, is_slot}
+    input_validators::{is_amount, is_keypair, is_pubkey, is_url, is_slot, is_parsable}
 };
 use solana_sdk::{
     self,
@@ -21,13 +19,11 @@ use solana_sdk::{
 };
 use solana_program::{msg, pubkey::Pubkey, system_program, sysvar, program_pack::Pack};
 use spl_token;
-use std::convert::TryInto;
 
 // Lock the vesting contract
 fn command_create_svc(
     rpc_client: RpcClient,
     program_id: Pubkey,
-    mut vesting_seed: [u8;32],
     payer: Keypair,
     source_token_owner: Keypair,
     possible_source_token_pubkey: Option<Pubkey>,
@@ -42,16 +38,25 @@ fn command_create_svc(
         _ => possible_source_token_pubkey.unwrap(),
     };
 
-    // Find the non reversible public key for the vesting contract via the seed    
-    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
-    vesting_seed[31] = bump;
-    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
+    // Find a valid seed for the vesting program account key to be non reversible and unused
+    let mut not_found = true;
+    let mut vesting_seed: [u8;32] = [0;32];
+    let mut vesting_pubkey = Pubkey::new_unique();
+    while not_found {
+        vesting_seed = Pubkey::new_unique().to_bytes();
+        let program_id_bump = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
+        vesting_pubkey = program_id_bump.0;
+        vesting_seed[31] = program_id_bump.1;
+        not_found = match rpc_client.get_account(&vesting_pubkey) {
+            Ok(_) => true,
+            Err(_) => false
+        }
+    }
 
     let vesting_token_pubkey = get_associated_token_address(
         &vesting_pubkey, 
         &mint_address
     );
-    msg!("Vesting token account pubkey: {:?}", vesting_token_pubkey);
 
     let instructions = [
         // Create and initiliaze the vesting token account
@@ -91,18 +96,19 @@ fn command_create_svc(
     transaction.sign(&[&payer], recent_blockhash);
 
     rpc_client.send_transaction(&transaction).unwrap();
+
+    msg!("\nThe seed of the contract is: {:?}", Pubkey::new_from_array(vesting_seed));
+    msg!("Please write it down as it is needed to interact with the contract.");
 }
 
 fn command_unlock_svc(
     rpc_client: RpcClient,
     program_id: Pubkey,
-    mut vesting_seed: [u8;32],
+    vesting_seed: [u8;32],
     payer: Keypair
 ) {
     // Find the non reversible public key for the vesting contract via the seed    
-    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
-    vesting_seed[31] = bump;
-    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
+    let (vesting_pubkey, _) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
 
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let header_state = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap(); 
@@ -140,13 +146,11 @@ fn command_change_destination(
     destination_token_account_owner: Keypair,
     opt_new_destination_account: Option<Pubkey>,
     opt_new_destination_token_account: Option<Pubkey>,
-    mut vesting_seed: [u8;32],
+    vesting_seed: [u8;32],
     payer: Keypair
 ) {
     // Find the non reversible public key for the vesting contract via the seed    
-    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
-    vesting_seed[31] = bump;
-    msg!("Vesting account pubkey: {:?}", &vesting_pubkey);
+    let (vesting_pubkey, _) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
 
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let state_header = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap();
@@ -182,27 +186,21 @@ fn command_info(
     rpc_client: RpcClient,
     rpc_url: String,
     program_id: Pubkey,
-    mut vesting_seed: [u8;32],
+    vesting_seed: [u8;32],
 ) {
     msg!("\n---------------VESTING--CONTRACT--INFO-----------------\n");
     msg!("RPC URL: {:?}", &rpc_url);
     msg!("Program ID: {:?}", &program_id);
-    msg!("Original Vesting Seed: {:?}", &std::str::from_utf8(&vesting_seed).unwrap());
+    msg!("Vesting Seed: {:?}", Pubkey::new_from_array(vesting_seed));
     
     // Find the non reversible public key for the vesting contract via the seed    
-    let (vesting_pubkey, bump) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
-    vesting_seed[31] = bump;
-    msg!("Corrective Seed Bump: {:?}", bump);
+    let (vesting_pubkey, _) = Pubkey::find_program_address(&[&vesting_seed[..31]], &program_id);
     msg!("Vesting Account Pubkey: {:?}", &vesting_pubkey);
 
     let packed_state = rpc_client.get_account_data(&vesting_pubkey).unwrap();
     let state_header = VestingScheduleHeader::unpack(&packed_state[..VestingScheduleHeader::LEN]).unwrap();
     let vesting_token_pubkey = get_associated_token_address(
         &vesting_pubkey,
-        &state_header.mint_address
-    );
-    let destination_token_pubkey = get_associated_token_address(
-        &state_header.destination_address,
         &state_header.mint_address
     );
     msg!("Vesting Token Account Pubkey: {:?}", &vesting_token_pubkey);
@@ -251,16 +249,6 @@ fn main() {
                 .takes_value(true)
                 .help(
                     "Specify the address (public key) of the program.",
-                ),
-        )
-        .arg(
-            Arg::with_name("seed")
-                .long("seed")
-                .value_name("ADDRESS")
-                // .validator(is_hash)  //TODO
-                .takes_value(true)
-                .help(
-                    "Specify the seed for the vesting contract.",
                 ),
         )
         .subcommand(SubCommand::with_name("create").about("Create a new vesting contract with an optionnal release schedule")        
@@ -370,6 +358,16 @@ fn main() {
         .subcommand(SubCommand::with_name("unlock").about("Unlock a vesting contract. This will only release \
         the schedules that have reached maturity.")
             .arg(
+                Arg::with_name("seed")
+                    .long("seed")
+                    .value_name("SEED")
+                    .validator(is_parsable::<String>)
+                    .takes_value(true)
+                    .help(
+                        "Specify the seed for the vesting contract.",
+                    ),
+            )
+            .arg(
                 Arg::with_name("payer")
                     .long("payer")
                     .value_name("KEYPAIR")
@@ -383,6 +381,16 @@ fn main() {
             )
         )
         .subcommand(SubCommand::with_name("change-destination").about("Change the destination of a vesting contract")
+            .arg(
+                Arg::with_name("seed")
+                    .long("seed")
+                    .value_name("SEED")
+                    .validator(is_parsable::<String>)
+                    .takes_value(true)
+                    .help(
+                        "Specify the seed for the vesting contract.",
+                    ),
+            )
             .arg(
                 Arg::with_name("current_destination_owner")
                     .long("current_destination_owner")
@@ -432,15 +440,24 @@ fn main() {
                     ),
             )
         )
-        .subcommand(SubCommand::with_name("info").about("Print information about a vesting contract"))
+        .subcommand(SubCommand::with_name("info").about("Print information about a vesting contract")
+            .arg(
+                Arg::with_name("seed")
+                    .long("seed")
+                    .value_name("SEED")
+                    .validator(is_parsable::<String>)
+                    .takes_value(true)
+                    .help(
+                        "Specify the seed for the vesting contract.",
+                    ),
+            )
+        )
         .get_matches();
 
     let rpc_url = value_t!(matches, "rpc_url", String)
     .unwrap();
     let rpc_client = RpcClient::new(rpc_url);
-
     let program_id = pubkey_of(&matches, "program_id").unwrap();
-    let vesting_seed = (*String::as_bytes(&value_of(&matches, "seed").unwrap())).try_into().unwrap();
         
     let _ = match matches.subcommand() {
         ("create", Some(arg_matches)) => {
@@ -469,7 +486,6 @@ fn main() {
             command_create_svc(
                 rpc_client,
                 program_id,
-                vesting_seed,
                 payer_keypair,
                 source_keypair,
                 source_token_pubkey,
@@ -479,6 +495,8 @@ fn main() {
             )
         }
         ("unlock", Some(arg_matches)) => {
+            // The seed is given in the format of a pubkey on the user side but it's handled as a [u8;32] in the program 
+            let vesting_seed = pubkey_of(arg_matches, "seed").unwrap().to_bytes();
             let payer_keypair = keypair_of(arg_matches, "payer").unwrap();
             command_unlock_svc(
                 rpc_client,
@@ -488,6 +506,7 @@ fn main() {
             )
         }
         ("change-destination", Some(arg_matches)) => {
+            let vesting_seed = pubkey_of(arg_matches, "seed").unwrap().to_bytes();
             let destination_account_owner = keypair_of(arg_matches, "current_destination_owner").unwrap();
             let opt_new_destination_account = pubkey_of(arg_matches, "new_destination_address");
             let opt_new_destination_token_account = pubkey_of(arg_matches, "new_destination_token_address");
@@ -501,8 +520,9 @@ fn main() {
                 vesting_seed,
                 payer_keypair
             )
-        }        
+        }
         ("info", Some(arg_matches)) => {
+            let vesting_seed = pubkey_of(arg_matches, "seed").unwrap().to_bytes();
             let rpcurl = value_of(arg_matches, "rpc_url").unwrap();
             command_info(
                 rpc_client,
