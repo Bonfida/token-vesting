@@ -22,25 +22,11 @@ import {
   mintAddress,
   schedule,
   signTransactionInstructions,
+  findAssociatedTokenAddress,
+  createAssociatedTokenAccount,
 } from './utils';
 import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
 import { assert } from 'console';
-
-async function findAssociatedTokenAddress(
-  walletAddress: PublicKey,
-  tokenMintAddress: PublicKey,
-): Promise<PublicKey> {
-  return (
-    await PublicKey.findProgramAddress(
-      [
-        walletAddress.toBuffer(),
-        TOKEN_PROGRAM_ID.toBuffer(),
-        tokenMintAddress.toBuffer(),
-      ],
-      VESTING_PROGRAM_ID,
-    )
-  )[0];
-}
 
 export async function create(
   programId: PublicKey,
@@ -78,7 +64,7 @@ export async function create(
 
   seedWord = Buffer.from(seedWord.toString('hex') + bump.toString(16), 'hex');
 
-  console.log('Vesting token account pubkey: ', pubkey.toBase58());
+  console.log('Vesting contract account pubkey: ', pubkey.toBase58());
   console.log('contract ID: ', seedWord.toString('hex'));
 
   let instruction = [
@@ -89,6 +75,13 @@ export async function create(
       pubkey,
       [seedWord],
       schedules.length,
+    ),
+    await createAssociatedTokenAccount(
+      SystemProgram.programId,
+      SYSVAR_CLOCK_PUBKEY,
+      payer.publicKey,
+      pubkey,
+      mintAddress
     ),
     createCreateInstruction(
       programId,

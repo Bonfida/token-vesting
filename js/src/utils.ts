@@ -9,8 +9,27 @@ import {
   Transaction,
   TransactionInstruction,
   PublicKey,
+  TransactionInstruction,
+  SYSVAR_RENT_PUBKEY
 } from '@solana/web3.js';
 import { Schedule } from './state';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+
+export async function findAssociatedTokenAddress(
+  walletAddress: PublicKey,
+  tokenMintAddress: PublicKey,
+): Promise<PublicKey> {
+  return (
+    await PublicKey.findProgramAddress(
+      [
+        walletAddress.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        tokenMintAddress.toBuffer(),
+      ],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+  )[0];
+}
 
 export class Numberu64 extends BN {
   /**
@@ -72,6 +91,11 @@ export const getAccountFromSeed = (seed: Buffer): Account => {
 export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
   'Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ',
 );
+
+export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
+   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+);
+
 export const walletSeed = Buffer.from(
   'cf556a77183c563b77986835d39d600a8d56998254d42d95888f91df9bb20fabc5da8e06f59a202bf23fb99e3cd10d2ea292437baa80d9d78c7e0f6f2eaf5621',
   'hex',
@@ -108,3 +132,56 @@ export const signTransactionInstructions = async (
     preflightCommitment: 'single',
   });
 };
+
+export const createAssociatedTokenAccount = async (
+  systemProgramId: PublicKey,
+  clockSysvarId: PublicKey,
+  fundingAddress: PublicKey,
+  walletAddress: PublicKey,
+  splTokenMintAddress: PublicKey
+): Promise<TransactionInstruction> => {
+  const associatedTokenAddress = await findAssociatedTokenAddress(walletAddress, splTokenMintAddress);
+  const keys = [
+    {
+      pubkey: fundingAddress,
+      isSigner: true,
+      isWritable: true
+    },
+    {
+      pubkey: associatedTokenAddress,
+      isSigner: false,
+      isWritable: true
+    },
+    {
+      pubkey: walletAddress,
+      isSigner: false,
+      isWritable: false
+    },
+    {
+      pubkey: splTokenMintAddress,
+      isSigner: false,
+      isWritable: false
+    },
+    {
+      pubkey: systemProgramId,
+      isSigner: false,
+      isWritable: false
+    },
+    {
+      pubkey: TOKEN_PROGRAM_ID,
+      isSigner: false,
+      isWritable: false
+    },
+    {
+      pubkey: SYSVAR_RENT_PUBKEY,
+      isSigner: false,
+      isWritable: false
+    },
+  ];
+  return new TransactionInstruction({
+    keys,
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    data: Buffer.from([])
+  })
+
+}
