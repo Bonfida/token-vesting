@@ -88,10 +88,10 @@ export const destinationPubkey = new PublicKey(
   '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
 );
 
-export const schedule: Schedule = {
-  releaseHeight: new Numberu64(29507188),
-  amount: new Numberu64(10),
-};
+export const schedule: Schedule = new Schedule(
+  new Numberu64(29507188),
+  new Numberu64(10),
+);
 
 // Sign transaction
 
