@@ -2,7 +2,6 @@ import {
   Account,
   PublicKey,
   SystemProgram,
-  Transaction,
   SYSVAR_CLOCK_PUBKEY,
   TransactionInstruction,
   Connection,
@@ -200,7 +199,6 @@ export async function changeDestination(
 }
 
 const test = async (): Promise<void> => {
-  const pre_instructions = [];
   const instructions = await create(
     VESTING_PROGRAM_ID,
     [
