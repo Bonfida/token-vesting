@@ -16,7 +16,7 @@ export class Numberu64 extends BN {
   /**
    * Convert to Buffer representation
    */
-  toBuffer() {
+  toBuffer(): Buffer {
     const a = super.toArray().reverse();
     const b = Buffer.from(a);
     if (b.length === 8) {
@@ -32,7 +32,7 @@ export class Numberu64 extends BN {
   /**
    * Construct a Numberu64 from Buffer representation
    */
-  static fromBuffer(buffer) {
+  static fromBuffer(buffer): any {
     assert(buffer.length === 8, `Invalid buffer length: ${buffer.length}`);
     return new BN(
       [...buffer]
@@ -55,13 +55,13 @@ export const connection = new Connection(ENDPOINTS.devnet);
 
 // For accounts imported from Sollet.io
 
-export const getDerivedSeed = (seed: Buffer) => {
+export const getDerivedSeed = (seed: Buffer): Uint8Array => {
   const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
     .privateKey;
   return nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
 };
 
-export const getAccountFromSeed = (seed: Buffer) => {
+export const getAccountFromSeed = (seed: Buffer): Account => {
   const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
     .privateKey;
   return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
