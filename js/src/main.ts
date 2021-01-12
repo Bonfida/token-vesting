@@ -29,6 +29,7 @@ import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
 import { assert } from 'console';
 
 export async function create(
+  connection: Connection,
   programId: PublicKey,
   seedWord: Buffer | Uint8Array,
   payer: PublicKey,
@@ -62,6 +63,11 @@ export async function create(
 
   console.log('Vesting contract account pubkey: ', vestingAccountKey.toBase58());
   console.log('contract ID: ', seedWord.toString('hex'));
+
+  const check_existing = await connection.getAccountInfo(vestingAccountKey);
+  if (check_existing != null){
+    throw 'Contract already exists.'
+  }
 
   let instruction = [
     createInitInstruction(
@@ -135,9 +141,13 @@ export async function getContractInfo(
 ): Promise<ContractInfo> {
   console.log("Fetching contract ", vestingAccountKey.toBase58());
   const vestingInfo = await connection.getAccountInfo(vestingAccountKey, "single");
-  assert(vestingInfo != null, 'Vesting contract account is unavailable');
+  if (vestingInfo == null){
+    throw 'Vesting contract account is unavailable'
+  }
   const info = ContractInfo.fromBuffer(vestingInfo!.data);
-  assert(info != undefined, "Vesting contract isn't initialized");
+  if (info == undefined){
+    throw 'Vesting contract account is not initialized'
+  }
   return info!;
 }
 
@@ -183,6 +193,7 @@ export async function changeDestination(
 
 const test = async (): Promise<void> => {
   // const instructions = await create(
+  //   connection,
   //   VESTING_PROGRAM_ID,
   //   Buffer.from('1111111111111491234512345123451211111111111114512345123451234512','hex'),
   //   account.publicKey,
