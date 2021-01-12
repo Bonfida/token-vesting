@@ -30,9 +30,9 @@ import { assert } from 'console';
 
 export async function create(
   programId: PublicKey,
-  vestingSeed: Array<Buffer | Uint8Array>,
-  payer: Account,
-  sourceTokenOwner: Account,
+  seedWord: Buffer | Uint8Array,
+  payer: PublicKey,
+  sourceTokenOwner: PublicKey,
   possibleSourceTokenPubkey: PublicKey | null,
   destinationTokenPubkey: PublicKey,
   mintAddress: PublicKey,
@@ -41,54 +41,50 @@ export async function create(
   // If no source token account was given, use the associated source account
   if (possibleSourceTokenPubkey == null) {
     possibleSourceTokenPubkey = await findAssociatedTokenAddress(
-      sourceTokenOwner.publicKey,
+      sourceTokenOwner,
       mintAddress,
     );
   }
 
-  let seedWord = vestingSeed[0];
-
-  const numberOfSchedules = schedules.length;
-
   // Find the non reversible public key for the vesting contract via the seed
   seedWord = seedWord.slice(0, 31);
-  const [pubkey, bump] = await PublicKey.findProgramAddress(
+  const [vestingAccountKey, bump] = await PublicKey.findProgramAddress(
     [seedWord],
     programId,
   );
 
   const vestingTokenAccountKey = await findAssociatedTokenAddress(
-    pubkey,
+    vestingAccountKey,
     mintAddress,
   );
 
   seedWord = Buffer.from(seedWord.toString('hex') + bump.toString(16), 'hex');
 
-  console.log('Vesting contract account pubkey: ', pubkey.toBase58());
+  console.log('Vesting contract account pubkey: ', vestingAccountKey.toBase58());
   console.log('contract ID: ', seedWord.toString('hex'));
 
   let instruction = [
     createInitInstruction(
       SystemProgram.programId,
       programId,
-      payer.publicKey,
-      pubkey,
+      payer,
+      vestingAccountKey,
       [seedWord],
       schedules.length,
     ),
     await createAssociatedTokenAccount(
       SystemProgram.programId,
       SYSVAR_CLOCK_PUBKEY,
-      payer.publicKey,
-      pubkey,
+      payer,
+      vestingAccountKey,
       mintAddress
     ),
     createCreateInstruction(
       programId,
       TOKEN_PROGRAM_ID,
-      pubkey,
+      vestingAccountKey,
       vestingTokenAccountKey,
-      sourceTokenOwner.publicKey,
+      sourceTokenOwner,
       possibleSourceTokenPubkey,
       destinationTokenPubkey,
       mintAddress,
@@ -102,10 +98,8 @@ export async function create(
 export async function unlock(
   connection: Connection,
   programId: PublicKey,
-  vestingSeed: Array<Buffer | Uint8Array>,
-  payer: Account,
+  seedWord: Buffer | Uint8Array,
 ): Promise<Array<TransactionInstruction>> {
-  let seedWord = vestingSeed[0];
   seedWord = seedWord.slice(0, 31);
   const [vestingAccountKey, bump] = await PublicKey.findProgramAddress(
     [seedWord],
@@ -118,7 +112,7 @@ export async function unlock(
     mintAddress,
   );
 
-  const vestingInfo = await getContractInfo(connection, programId, [seedWord]);
+  const vestingInfo = await getContractInfo(connection, vestingAccountKey);
 
   let instruction = [
     createUnlockInstruction(
@@ -137,14 +131,10 @@ export async function unlock(
 
 export async function getContractInfo(
   connection: Connection,
-  programId: PublicKey,
-  vestingSeed: Array<Buffer | Uint8Array>,
+  vestingAccountKey: PublicKey,
 ): Promise<ContractInfo> {
-  const [vestingAccountKey, bump] = await PublicKey.findProgramAddress(
-    vestingSeed,
-    programId,
-  );
-  const vestingInfo = await connection.getAccountInfo(vestingAccountKey);
+  console.log("Fetching contract ", vestingAccountKey.toBase58());
+  const vestingInfo = await connection.getAccountInfo(vestingAccountKey, "single");
   assert(vestingInfo != null, 'Vesting contract account is unavailable');
   const info = ContractInfo.fromBuffer(vestingInfo!.data);
   assert(info != undefined, "Vesting contract isn't initialized");
@@ -167,7 +157,7 @@ export async function changeDestination(
   );
   seedWord = Buffer.from(seedWord.toString('hex') + bump.toString(16), 'hex');
 
-  const contractInfo = await getContractInfo(connection, programId, [seedWord]);
+  const contractInfo = await getContractInfo(connection, vestingAccountKey);
   if (newDestinationTokenAccount == undefined) {
     assert(
       newDestinationTokenAccountOwner != undefined,
@@ -192,26 +182,35 @@ export async function changeDestination(
 }
 
 const test = async (): Promise<void> => {
-  const instructions = await create(
+  // const instructions = await create(
+  //   VESTING_PROGRAM_ID,
+  //   Buffer.from('1111111111111491234512345123451211111111111114512345123451234512','hex'),
+  //   account.publicKey,
+  //   account.publicKey,
+  //   tokenPubkey,
+  //   destinationPubkey,
+  //   mintAddress,
+  //   [schedule],
+  // );
+  // const signed = await signTransactionInstructions(
+  //   connection,
+  //   [account],
+  //   account.publicKey,
+  //   instructions,
+  // );
+
+  const instructions_unlock = await unlock(
+    connection,
     VESTING_PROGRAM_ID,
-    [
-      Buffer.from(
-        '1111111111111481234512345123451211111111111114512345123451234512',
-        'hex',
-      ),
-    ],
-    account,
-    account,
-    tokenPubkey,
-    destinationPubkey,
-    mintAddress,
-    [schedule],
-  );
-  const signed = await signTransactionInstructions(
+    Buffer.from('1111111111111491234512345123451211111111111114512345123451234512','hex')
+  )
+
+
+  const signed_unlock = await signTransactionInstructions(
     connection,
     [account],
     account.publicKey,
-    instructions,
+    instructions_unlock,
   );
 };
 

@@ -115,7 +115,10 @@ export function createUnlockInstruction(
   destinationTokenAccountKey: PublicKey,
   seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
-  const data = Buffer.concat(seeds);
+  const data = Buffer.concat([
+    Buffer.from(Int8Array.from([2]).buffer),
+    Buffer.concat(seeds)
+  ]);
 
   const keys = [
     {
@@ -159,7 +162,10 @@ export function createChangeDestinationInstruction(
   targetDestinationTokenAccount: PublicKey,
   seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
-  const data = Buffer.concat(seeds);
+  const data = Buffer.concat([
+    Buffer.from(Int8Array.from([3]).buffer),
+    Buffer.concat(seeds)
+  ]);
 
   const keys = [
     {

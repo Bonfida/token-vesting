@@ -42,7 +42,7 @@ export class VestingScheduleHeader {
   static fromBuffer(buf: Buffer): VestingScheduleHeader {
     const destinationAddress = new PublicKey(buf.slice(0, 32));
     const mintAddress = new PublicKey(buf.slice(32, 64));
-    const isInitialized = buf[65] == 1;
+    const isInitialized = buf[64] == 1;
     const header: VestingScheduleHeader = {
       destinationAddress,
       mintAddress,

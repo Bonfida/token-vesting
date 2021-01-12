@@ -112,6 +112,8 @@ export const destinationPubkey = new PublicKey(
   '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
 );
 
+export const destinationPubkey2 = new PublicKey('7sGRawu4hCWpkZMgFpWcg4Ud5kYjJxkFduXpzJcsU1AH');
+
 export const schedule: Schedule = new Schedule(
   new Numberu64(29507188),
   new Numberu64(10),
