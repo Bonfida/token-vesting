@@ -1,7 +1,6 @@
 import { u64 } from '@solana/spl-token';
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 import { Schedule } from './state';
-
 import { Numberu64 } from './utils';
 
 export enum Instruction {
@@ -68,7 +67,11 @@ export function createCreateInstruction(
     mintAddress.toBuffer(),
     destinationTokenAccountKey.toBuffer(),
   ];
-  schedules.forEach(s => buffers.push(s.toBuffer()));
+
+  schedules.forEach(s => {
+    buffers.push(s.toBuffer());
+  });
+
   const data = Buffer.concat(buffers);
   const keys = [
     {
