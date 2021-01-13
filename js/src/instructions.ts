@@ -1,4 +1,4 @@
-import { PublicKey, TransactionInstruction } from '@solana/web3.js';
+import { PublicKey, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 import { Schedule } from './state';
 import { Numberu64 } from './utils';
 
@@ -26,6 +26,11 @@ export function createInitInstruction(
   const keys = [
     {
       pubkey: systemProgramId,
+      isSigner: false,
+      isWritable: false,
+    },
+    {
+      pubkey: SYSVAR_RENT_PUBKEY,
       isSigner: false,
       isWritable: false,
     },
