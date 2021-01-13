@@ -96,56 +96,40 @@ export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
 
-export const walletSeed = Buffer.from(
-  'cf556a77183c563b77986835d39d600a8d56998254d42d95888f91df9bb20fabc5da8e06f59a202bf23fb99e3cd10d2ea292437baa80d9d78c7e0f6f2eaf5621',
-  'hex',
-);
-
 // Original account
+
+export const walletSeed = Buffer.from('Enter your seed', 'hex');
 
 export const account = getAccountFromSeed(walletSeed);
 
-export const tokenPubkey = new PublicKey(
-  '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
-);
-export const mintAddress = new PublicKey(
-  'GAVRiTwa55gNrVZwsRzLGkCmLC1qvrFtUAfD1ARz5spP',
-);
+export const tokenPubkey = new PublicKey('');
+export const mintAddress = new PublicKey('');
 
 // 1st Destination account
 
-export const walletDestinationSeed = Buffer.from(
-  'afafa04478843a6d82c8d1127307f2fec2eb5f4272bbd4dee5e27696876ce155641132a08426b5548e395f647cc164511eac18de87a692e31b1d11fa8619300f',
-  'hex',
-);
+export const walletDestinationSeed = Buffer.from('Enter your seed', 'hex');
 
 export const destinationAccount = getAccountFromSeed(walletDestinationSeed);
 
-export const destinationPubkey = new PublicKey(
-  'FZUK34uF1LkYtbjacynSPBZ4aeTCsvZ3R9VZGjUiSu27',
-);
+export const destinationPubkey = new PublicKey('Enter your pubkey');
 
 // 2nd Destination account
 
-export const walletNewDestinationSeed = Buffer.from(
-  '23934c36c5464b4370ed2976057f734f0cbe2d838fbf56b5b739eac9c75ee50f044a8ab917dc1f096b53cbbd8d4c98af045eb0f30cba1cb228a766413f3410ba',
-  'hex',
-);
+export const walletNewDestinationSeed = Buffer.from('Enter your seed', 'hex');
 
 export const newDestinationTokenAccountOwner = new PublicKey(
-  '5ViWRxr4dxsWAEkVvjD6mm5hSKby5ooYxM6taFEzp1Q9',
+  'Enter your pubkey',
 );
 
-export const newDestinationTokenAccount = new PublicKey(
-  'CrYqDj1S44Hi7vbuz6kaXXbCWYe5PJJCF2LZjN26V9K5',
-);
+export const newDestinationTokenAccount = new PublicKey('Enter your pubkey');
 
 export const schedule: Schedule = new Schedule(
-  new Numberu64(29507188),
-  new Numberu64(10),
+  new Numberu64(29507188), // Enter the slot height for the vesting schedule
+  new Numberu64(10), // Enter the amount to be vested
 );
 
 export const generateRandomSeed = () => {
+  // Generate a random seed
   let seed = '';
   for (let i = 0; i < 64; i++) {
     seed += Math.floor(Math.random() * 10);
@@ -160,6 +144,7 @@ export const sleep = (ms: number): Promise<void> => {
 // Sign transaction
 
 export const signTransactionInstructions = async (
+  // sign and send transaction
   connection: Connection,
   signers: Array<Account>,
   feePayer: PublicKey,

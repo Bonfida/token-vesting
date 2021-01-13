@@ -1,3 +1,7 @@
+## ⚠️ Warning
+
+This code is unaudited use at your own risk.
+
 # Token vesting contract
 
 ## Goal

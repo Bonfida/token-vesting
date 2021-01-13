@@ -28,7 +28,6 @@ import {
   destinationPubkey,
   destinationAccount,
   newDestinationTokenAccountOwner,
-  newDestinationTokenAccount,
 } from './utils';
 import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
 import { assert } from 'console';
