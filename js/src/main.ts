@@ -18,12 +18,17 @@ import {
   account,
   VESTING_PROGRAM_ID,
   tokenPubkey,
-  destinationPubkey,
   mintAddress,
   schedule,
   signTransactionInstructions,
   findAssociatedTokenAddress,
   createAssociatedTokenAccount,
+  generateRandomSeed,
+  sleep,
+  destinationPubkey,
+  destinationAccount,
+  newDestinationTokenAccountOwner,
+  newDestinationTokenAccount,
 } from './utils';
 import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
 import { assert } from 'console';
@@ -61,12 +66,15 @@ export async function create(
 
   seedWord = Buffer.from(seedWord.toString('hex') + bump.toString(16), 'hex');
 
-  console.log('Vesting contract account pubkey: ', vestingAccountKey.toBase58());
+  console.log(
+    'Vesting contract account pubkey: ',
+    vestingAccountKey.toBase58(),
+  );
   console.log('contract ID: ', seedWord.toString('hex'));
 
   const check_existing = await connection.getAccountInfo(vestingAccountKey);
-  if (check_existing != null){
-    throw 'Contract already exists.'
+  if (!!check_existing) {
+    throw 'Contract already exists.';
   }
 
   let instruction = [
@@ -83,7 +91,7 @@ export async function create(
       SYSVAR_CLOCK_PUBKEY,
       payer,
       vestingAccountKey,
-      mintAddress
+      mintAddress,
     ),
     createCreateInstruction(
       programId,
@@ -139,14 +147,17 @@ export async function getContractInfo(
   connection: Connection,
   vestingAccountKey: PublicKey,
 ): Promise<ContractInfo> {
-  console.log("Fetching contract ", vestingAccountKey.toBase58());
-  const vestingInfo = await connection.getAccountInfo(vestingAccountKey, "single");
-  if (vestingInfo == null){
-    throw 'Vesting contract account is unavailable'
+  console.log('Fetching contract ', vestingAccountKey.toBase58());
+  const vestingInfo = await connection.getAccountInfo(
+    vestingAccountKey,
+    'single',
+  );
+  if (!vestingInfo) {
+    throw 'Vesting contract account is unavailable';
   }
   const info = ContractInfo.fromBuffer(vestingInfo!.data);
-  if (info == undefined){
-    throw 'Vesting contract account is not initialized'
+  if (!info) {
+    throw 'Vesting contract account is not initialized';
   }
   return info!;
 }
@@ -168,9 +179,9 @@ export async function changeDestination(
   seedWord = Buffer.from(seedWord.toString('hex') + bump.toString(16), 'hex');
 
   const contractInfo = await getContractInfo(connection, vestingAccountKey);
-  if (newDestinationTokenAccount == undefined) {
+  if (!newDestinationTokenAccount) {
     assert(
-      newDestinationTokenAccountOwner != undefined,
+      !!newDestinationTokenAccountOwner,
       'At least one of newDestinationTokenAccount and newDestinationTokenAccountOwner must be provided!',
     );
     newDestinationTokenAccount = await findAssociatedTokenAddress(
@@ -192,37 +203,63 @@ export async function changeDestination(
 }
 
 const test = async (): Promise<void> => {
-  // const instructions = await create(
-  //   connection,
-  //   VESTING_PROGRAM_ID,
-  //   Buffer.from('1111111111111491234512345123451211111111111114512345123451234512','hex'),
-  //   account.publicKey,
-  //   account.publicKey,
-  //   tokenPubkey,
-  //   destinationPubkey,
-  //   mintAddress,
-  //   [schedule],
-  // );
-  // const signed = await signTransactionInstructions(
-  //   connection,
-  //   [account],
-  //   account.publicKey,
-  //   instructions,
-  // );
-
-  const instructions_unlock = await unlock(
+  const seed = generateRandomSeed();
+  console.log(`Seed ${seed}`);
+  const instructions = await create(
     connection,
     VESTING_PROGRAM_ID,
-    Buffer.from('1111111111111491234512345123451211111111111114512345123451234512','hex')
-  )
-
-
-  const signed_unlock = await signTransactionInstructions(
+    Buffer.from(seed, 'hex'),
+    account.publicKey,
+    account.publicKey,
+    tokenPubkey,
+    destinationPubkey,
+    mintAddress,
+    [schedule],
+  );
+  const signed = await signTransactionInstructions(
     connection,
     [account],
     account.publicKey,
-    instructions_unlock,
+    instructions,
   );
+  console.log('✅ Successfully created vesting instructions');
+  console.log(`🚚 Transaction signature: ${signed} \n`);
+  await sleep(5 * 1000);
+
+  const instructionsUnlock = await unlock(
+    connection,
+    VESTING_PROGRAM_ID,
+    Buffer.from(seed, 'hex'),
+  );
+
+  const signedUnlock = await signTransactionInstructions(
+    connection,
+    [account],
+    account.publicKey,
+    instructionsUnlock,
+  );
+  console.log('✅ Successfully created unlocking instructions');
+  console.log(`🚚 Transaction signature: ${signedUnlock} \n`);
+  await sleep(5 * 1000);
+
+  const instructionsChangeDestination = await changeDestination(
+    connection,
+    VESTING_PROGRAM_ID,
+    destinationAccount,
+    newDestinationTokenAccountOwner,
+    undefined,
+    [Buffer.from(seed, 'hex')],
+  );
+
+  const signedChangeDestination = await signTransactionInstructions(
+    connection,
+    [destinationAccount],
+    destinationAccount.publicKey,
+    instructionsChangeDestination,
+  );
+
+  console.log('✅ Successfully changed destination');
+  console.log(`🚚 Transaction signature: ${signedChangeDestination}`);
 };
 
 test();

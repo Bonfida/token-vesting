@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
   PublicKey,
   TransactionInstruction,
-  SYSVAR_RENT_PUBKEY
+  SYSVAR_RENT_PUBKEY,
 } from '@solana/web3.js';
 import { Schedule } from './state';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -93,14 +93,18 @@ export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
 );
 
 export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
-   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
 
 export const walletSeed = Buffer.from(
   'cf556a77183c563b77986835d39d600a8d56998254d42d95888f91df9bb20fabc5da8e06f59a202bf23fb99e3cd10d2ea292437baa80d9d78c7e0f6f2eaf5621',
   'hex',
 );
+
+// Original account
+
 export const account = getAccountFromSeed(walletSeed);
+
 export const tokenPubkey = new PublicKey(
   '4PkZGUcaQoW7o138fUyn2xi1PfBNH2RFEavxyoKfJvtG',
 );
@@ -108,16 +112,50 @@ export const mintAddress = new PublicKey(
   'GAVRiTwa55gNrVZwsRzLGkCmLC1qvrFtUAfD1ARz5spP',
 );
 
-export const destinationPubkey = new PublicKey(
-  '4F9NzDF3Z1PbJizbGJdZ3KvQJMrkK1GEBaN6BVmnmkzG',
+// 1st Destination account
+
+export const walletDestinationSeed = Buffer.from(
+  'afafa04478843a6d82c8d1127307f2fec2eb5f4272bbd4dee5e27696876ce155641132a08426b5548e395f647cc164511eac18de87a692e31b1d11fa8619300f',
+  'hex',
 );
 
-export const destinationPubkey2 = new PublicKey('7sGRawu4hCWpkZMgFpWcg4Ud5kYjJxkFduXpzJcsU1AH');
+export const destinationAccount = getAccountFromSeed(walletDestinationSeed);
+
+export const destinationPubkey = new PublicKey(
+  'FZUK34uF1LkYtbjacynSPBZ4aeTCsvZ3R9VZGjUiSu27',
+);
+
+// 2nd Destination account
+
+export const walletNewDestinationSeed = Buffer.from(
+  '23934c36c5464b4370ed2976057f734f0cbe2d838fbf56b5b739eac9c75ee50f044a8ab917dc1f096b53cbbd8d4c98af045eb0f30cba1cb228a766413f3410ba',
+  'hex',
+);
+
+export const newDestinationTokenAccountOwner = new PublicKey(
+  '5ViWRxr4dxsWAEkVvjD6mm5hSKby5ooYxM6taFEzp1Q9',
+);
+
+export const newDestinationTokenAccount = new PublicKey(
+  'CrYqDj1S44Hi7vbuz6kaXXbCWYe5PJJCF2LZjN26V9K5',
+);
 
 export const schedule: Schedule = new Schedule(
   new Numberu64(29507188),
   new Numberu64(10),
 );
+
+export const generateRandomSeed = () => {
+  let seed = '';
+  for (let i = 0; i < 64; i++) {
+    seed += Math.floor(Math.random() * 10);
+  }
+  return seed;
+};
+
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 // Sign transaction
 
@@ -140,50 +178,52 @@ export const createAssociatedTokenAccount = async (
   clockSysvarId: PublicKey,
   fundingAddress: PublicKey,
   walletAddress: PublicKey,
-  splTokenMintAddress: PublicKey
+  splTokenMintAddress: PublicKey,
 ): Promise<TransactionInstruction> => {
-  const associatedTokenAddress = await findAssociatedTokenAddress(walletAddress, splTokenMintAddress);
+  const associatedTokenAddress = await findAssociatedTokenAddress(
+    walletAddress,
+    splTokenMintAddress,
+  );
   const keys = [
     {
       pubkey: fundingAddress,
       isSigner: true,
-      isWritable: true
+      isWritable: true,
     },
     {
       pubkey: associatedTokenAddress,
       isSigner: false,
-      isWritable: true
+      isWritable: true,
     },
     {
       pubkey: walletAddress,
       isSigner: false,
-      isWritable: false
+      isWritable: false,
     },
     {
       pubkey: splTokenMintAddress,
       isSigner: false,
-      isWritable: false
+      isWritable: false,
     },
     {
       pubkey: systemProgramId,
       isSigner: false,
-      isWritable: false
+      isWritable: false,
     },
     {
       pubkey: TOKEN_PROGRAM_ID,
       isSigner: false,
-      isWritable: false
+      isWritable: false,
     },
     {
       pubkey: SYSVAR_RENT_PUBKEY,
       isSigner: false,
-      isWritable: false
+      isWritable: false,
     },
   ];
   return new TransactionInstruction({
     keys,
     programId: ASSOCIATED_TOKEN_PROGRAM_ID,
-    data: Buffer.from([])
-  })
-
-}
+    data: Buffer.from([]),
+  });
+};

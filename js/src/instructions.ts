@@ -117,7 +117,7 @@ export function createUnlockInstruction(
 ): TransactionInstruction {
   const data = Buffer.concat([
     Buffer.from(Int8Array.from([2]).buffer),
-    Buffer.concat(seeds)
+    Buffer.concat(seeds),
   ]);
 
   const keys = [
@@ -164,7 +164,7 @@ export function createChangeDestinationInstruction(
 ): TransactionInstruction {
   const data = Buffer.concat([
     Buffer.from(Int8Array.from([3]).buffer),
-    Buffer.concat(seeds)
+    Buffer.concat(seeds),
   ]);
 
   const keys = [
