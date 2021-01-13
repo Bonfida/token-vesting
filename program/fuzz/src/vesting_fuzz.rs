@@ -190,16 +190,31 @@ async fn run_fuzz_instructions(
     
     // TODO catch the "correct" errors, cannot parse errors coming from banks_client
     // banks_client.process_transaction(transaction).await.unwrap();
-    
-    let result: InstructionError = if let TransactionError::InstructionError( 0, e) =
-        banks_client.process_transaction(transaction).await.unwrap_err().unwrap() {
-            e
-    } else {
-        panic!()
-    };
 
+    let result: Option<InstructionError> = match banks_client.process_transaction(transaction).await.unwrap_err().unwrap() {
+        TransactionError::InstructionError( _, e) => {
+            Some(e)
+        },
+        TransactionError::SignatureFailure => {
+            None
+        },
+        _ => panic!()
+    };
+    
     match result {
-        InstructionError::InvalidAccountData => {
+        Some(InstructionError::InvalidArgument) => {
+            
+        },
+        Some(InstructionError::InvalidInstructionData) => {
+            
+        },
+        Some(InstructionError::InvalidAccountData) => {
+            
+        },
+        Some(InstructionError::InsufficientFunds) => {
+            
+        },
+        Some(InstructionError::Custom(0)) => {
             
         },
         _ => {
@@ -207,12 +222,6 @@ async fn run_fuzz_instructions(
         }
     }
 }
-
-// SwapError::ConversionFailure,
-// SwapError::FeeCalculationFailure,
-// SwapError::ExceededSlippage,
-// SwapError::ZeroTradingTokens,
-// TokenError::InsufficientFunds,
 
 
 fn run_fuzz_instruction(
