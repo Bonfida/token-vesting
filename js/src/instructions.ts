@@ -40,7 +40,7 @@ export function createInitInstruction(
       isWritable: true,
     },
   ];
-  console.log(data.toString('hex'));
+
   return new TransactionInstruction({
     keys,
     programId: vestingProgramId,
