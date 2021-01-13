@@ -73,7 +73,7 @@ pub enum VestingInstruction {
         // The seed used to derive the vesting accounts address
         seeds: [u8; 32],
         // The number of release schedules for this contract to hold
-        number_of_schedules: u64,
+        number_of_schedules: u32,
     },
     /// Creates a new vesting schedule contract
     ///
@@ -127,9 +127,9 @@ impl VestingInstruction {
                     .and_then(|slice| slice.try_into().ok())
                     .unwrap();
                 let number_of_schedules = rest
-                    .get(32..40)
+                    .get(32..36)
                     .and_then(|slice| slice.try_into().ok())
-                    .map(u64::from_le_bytes)
+                    .map(u32::from_le_bytes)
                     .ok_or(InvalidInstruction)?;
                 Self::Init {
                     seeds,
@@ -241,7 +241,7 @@ pub fn init(
     payer_key: &Pubkey,
     vesting_account: &Pubkey,
     seeds: [u8; 32],
-    number_of_schedules: u64,
+    number_of_schedules: u32,
 ) -> Result<Instruction, ProgramError> {
     let data = VestingInstruction::Init {
         seeds,

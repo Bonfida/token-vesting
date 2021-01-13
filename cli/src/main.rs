@@ -57,7 +57,7 @@ fn command_create_svc(
             &payer.pubkey(),
             &vesting_pubkey,
             vesting_seed,
-            schedules.len() as u64,
+            schedules.len() as u32,
         )
         .unwrap(),
         create_associated_token_account(

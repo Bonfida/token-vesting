@@ -29,7 +29,7 @@ impl Processor {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         seeds: [u8; 32],
-        schedules: u64
+        schedules: u32
     ) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 

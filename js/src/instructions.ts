@@ -1,6 +1,6 @@
 import { PublicKey, SYSVAR_RENT_PUBKEY, TransactionInstruction } from '@solana/web3.js';
 import { Schedule } from './state';
-import { Numberu64 } from './utils';
+import { Numberu32 } from './utils';
 
 export enum Instruction {
   Init,
@@ -19,7 +19,7 @@ export function createInitInstruction(
     Buffer.from(Int8Array.from([0]).buffer),
     Buffer.concat(seeds),
     // @ts-ignore
-    new Numberu64(numberOfSchedules).toBuffer(),
+    new Numberu32(numberOfSchedules).toBuffer(),
   ];
 
   const data = Buffer.concat(buffers);

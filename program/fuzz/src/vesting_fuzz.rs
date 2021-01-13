@@ -238,7 +238,7 @@ fn run_fuzz_instruction(
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
+                    fuzz_instruction.number_of_schedules as u32
                 ).unwrap()], vec![]);
             },
 
@@ -252,7 +252,7 @@ fn run_fuzz_instruction(
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
+                    fuzz_instruction.number_of_schedules as u32
                 ).unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
@@ -284,7 +284,7 @@ fn run_fuzz_instruction(
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
+                    fuzz_instruction.number_of_schedules as u32
                 ).unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
@@ -329,7 +329,7 @@ fn run_fuzz_instruction(
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
+                    fuzz_instruction.number_of_schedules as u32
                 ).unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
@@ -386,7 +386,7 @@ fn run_fuzz_instruction(
                     &payer_key.pubkey(),
                     vesting_account_key,
                     fuzz_instruction.seeds,
-                    fuzz_instruction.number_of_schedules as u64
+                    fuzz_instruction.number_of_schedules as u32
                 ).unwrap()], vec![]);
             },
 
