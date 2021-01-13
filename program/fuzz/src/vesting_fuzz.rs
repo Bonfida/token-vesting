@@ -8,12 +8,12 @@ use solana_program::{hash::Hash, instruction::Instruction, pubkey::Pubkey, rent:
 use futures::executor::block_on;
 use honggfuzz::fuzz;
 use solana_program_test::{BanksClient, ProgramTest, processor};
-use solana_sdk::{signature::Keypair, signature::Signer, system_instruction, transaction::Transaction};
+use solana_sdk::{signature::Keypair, signature::Signer, system_instruction, transaction::Transaction, transport::TransportError};
 use arbitrary::Arbitrary;
 use std::collections::HashMap;
 use token_vesting::{instruction::{Schedule, VestingInstruction}, entrypoint::process_instruction};
 use token_vesting::instruction::{init, unlock, change_destination, create};
-use solana_sdk::{account::Account};
+use solana_sdk::{account::Account, instruction::InstructionError, transaction::TransactionError};
 struct TokenVestingEnv {
     system_program_id: Pubkey,
     token_program_id: Pubkey,
@@ -59,21 +59,21 @@ async fn main() {
         vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap(),
         mint_authority: Keypair::new()
     };
-    // Initialize and start the test network
-    let mut program_test = ProgramTest::new(
-        "token_vesting",
-        token_vesting_testenv.vesting_program_id,
-        processor!(process_instruction),
-    );
-
-    let correct_payer = Keypair::new(); 
-    program_test.add_account(correct_payer.pubkey(), Account {
-                lamports: u32::MAX as u64,
-                ..Account::default()
-    });
-    let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
-
+    
     loop {
+        // Initialize and start the test network
+        let mut program_test = ProgramTest::new(
+            "token_vesting",
+            token_vesting_testenv.vesting_program_id,
+            processor!(process_instruction),
+        );
+    
+        let correct_payer = Keypair::new(); 
+        program_test.add_account(correct_payer.pubkey(), Account {
+                    lamports: u32::MAX as u64,
+                    ..Account::default()
+        });
+        let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
             block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, &correct_payer, recent_blockhash));
         });
@@ -171,30 +171,42 @@ async fn run_fuzz_instructions(
         &signers,
         recent_blockhash
     );
+    // assert_eq!(
+    //     banks_client
+    //         .process_transaction(transaction)
+    //         .await
+    //         .unwrap_err()
+    //         .unwrap(),
+    //     TransactionError::InstructionError(
+    //         0,
+    //         InstructionError::Custom(LendingError::AlreadyInitialized as u32)
+    //     )
+    // );
+    
     // TODO catch the "correct" errors, cannot parse errors coming from banks_client
-    banks_client.process_transaction(transaction).await.unwrap(); //{
-        // let result = match banks_client.process_transaction(transaction).await.unwrap(); //{
-        // TransactionError::InstructionError(
-        //     0,
-        //     InstructionError::Custom(LendingError::AlreadyInitialized as u32)
-        // ) => {
-        //     return
-        // };
+    banks_client.process_transaction(transaction).await.unwrap();
+    // let result: InstructionError = if let TransactionError::InstructionError( 0, e) =
+    //     banks_client.process_transaction(transaction).await.unwrap_err().unwrap() {
+    //         e
+    // } else {
+    //     panic!()
+    // };
 
-    // result.map_err(|e| {
-    //     if !(e == SwapError::CalculationFailure.into()
-    //         || e == SwapError::ConversionFailure.into()
-    //         || e == SwapError::FeeCalculationFailure.into()
-    //         || e == SwapError::ExceededSlippage.into()
-    //         || e == SwapError::ZeroTradingTokens.into()
-    //         || e == TokenError::InsufficientFunds.into())
-    //     {
-    //         Err(e).unwrap()
+    // match result {
+    //     InstructionError::InvalidAccountData => {
+            
+    //     },
+    //     _ => {
+    //         Err(result).unwrap()
     //     }
-    // })
-    // .ok()
     // }
 }
+
+// SwapError::ConversionFailure,
+// SwapError::FeeCalculationFailure,
+// SwapError::ExceededSlippage,
+// SwapError::ZeroTradingTokens,
+// TokenError::InsufficientFunds,
 
 
 fn run_fuzz_instruction(
@@ -228,10 +240,10 @@ fn run_fuzz_instruction(
         );
 
         match fuzz_instruction {
-            // FuzzInstruction {
-            //     instruction: VestingInstruction::Init{ .. },
-            //     ..
-            _ => {
+            FuzzInstruction {
+                instruction: VestingInstruction::Init{ .. },
+                ..
+            } => {
                 return (vec![init(
                     &token_vesting_testenv.system_program_id,
                     &token_vesting_testenv.vesting_program_id,
