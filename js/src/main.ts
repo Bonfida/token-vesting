@@ -31,6 +31,7 @@ import {
 } from './utils';
 import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
 import { assert } from 'console';
+import bs58 from 'bs58';
 
 export async function create(
   connection: Connection,
@@ -69,7 +70,8 @@ export async function create(
     'Vesting contract account pubkey: ',
     vestingAccountKey.toBase58(),
   );
-  console.log('contract ID: ', seedWord.toString('hex'));
+
+  console.log('contract ID: ', bs58.encode(seedWord));
 
   const check_existing = await connection.getAccountInfo(vestingAccountKey);
   if (!!check_existing) {
