@@ -89,7 +89,7 @@ export const getAccountFromSeed = (seed: Buffer): Account => {
 // Test params
 
 export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
-  'Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ',
+  '5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy',
 );
 
 export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
