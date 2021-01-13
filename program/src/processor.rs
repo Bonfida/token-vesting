@@ -29,13 +29,16 @@ impl Processor {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         seeds: [u8; 32],
-        schedules: u64,
+        schedules: u64
     ) -> ProgramResult {
         let accounts_iter = &mut accounts.iter();
 
         let system_program_account = next_account_info(accounts_iter)?;
+        let rent_sysvar_account = next_account_info(accounts_iter)?;
         let payer = next_account_info(accounts_iter)?;
         let vesting_account = next_account_info(accounts_iter)?;
+
+        let rent = Rent::from_account_info(rent_sysvar_account)?;
 
         // Find the non reversible public key for the vesting contract via the seed
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], &program_id).unwrap();
@@ -49,7 +52,7 @@ impl Processor {
         let init_vesting_account = create_account(
             &payer.key,
             &vesting_account_key,
-            Rent::default().minimum_balance(state_size),
+            rent.minimum_balance(state_size),
             state_size as u64,
             &program_id,
         );

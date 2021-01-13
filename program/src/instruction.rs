@@ -5,6 +5,7 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
+    sysvar::rent
 };
 
 use std::convert::TryInto;
@@ -249,6 +250,7 @@ pub fn init(
     .pack();
     let accounts = vec![
         AccountMeta::new_readonly(*system_program_id, false),
+        AccountMeta::new_readonly(rent::id(), false),
         AccountMeta::new(*payer_key, true),
         AccountMeta::new(*vesting_account, false),
     ];
