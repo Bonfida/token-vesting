@@ -1,30 +1,37 @@
-use token_vesting::instruction;
 use spl_token::instruction::{initialize_mint, mint_to};
+use token_vesting::instruction;
 
+use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use std::{convert::TryInto, str::FromStr};
-use spl_associated_token_account::{get_associated_token_address, create_associated_token_account};
 
-use solana_program::{hash::Hash, instruction::Instruction, msg, pubkey::Pubkey, rent::Rent, system_program, sysvar};
+use arbitrary::Arbitrary;
 use futures::executor::block_on;
 use honggfuzz::fuzz;
-use solana_program_test::{BanksClient, ProgramTest, processor};
-use solana_sdk::{signature::Keypair, signature::Signer, system_instruction, transaction::Transaction};
-use arbitrary::Arbitrary;
+use solana_program::{
+    hash::Hash, instruction::Instruction, msg, pubkey::Pubkey, rent::Rent, system_program, sysvar,
+};
+use solana_program_test::{processor, BanksClient, ProgramTest};
+use solana_sdk::account::Account;
+use solana_sdk::{
+    signature::Keypair, signature::Signer, system_instruction, transaction::Transaction,
+};
 use std::collections::HashMap;
-use token_vesting::{processor::Processor, instruction::{Schedule, VestingInstruction}};
-use token_vesting::instruction::{init, unlock, change_destination, create};
-use solana_sdk::{account::Account};
+use token_vesting::instruction::{change_destination, create, init, unlock};
+use token_vesting::{
+    instruction::{Schedule, VestingInstruction},
+    processor::Processor,
+};
 struct TokenVestingEnv {
     system_program_id: Pubkey,
     token_program_id: Pubkey,
     sysvarclock_program_id: Pubkey,
     vesting_program_id: Pubkey,
-    mint_authority: Keypair
+    mint_authority: Keypair,
 }
 
 #[derive(Debug, Arbitrary, Clone)]
 struct FuzzInstruction {
-    vesting_account_key: AccountId,           
+    vesting_account_key: AccountId,
     vesting_token_account_key: AccountId,
     source_token_account_owner_key: AccountId,
     source_token_account_key: AccountId,
@@ -36,28 +43,27 @@ struct FuzzInstruction {
     schedules: Vec<Schedule>,
     payer_key: AccountId,
     vesting_program_account: AccountId,
-    seeds:[u8; 32],
+    seeds: [u8; 32],
     number_of_schedules: u8,
     instruction: instruction::VestingInstruction,
     // This flag decides wether the instruction will be executed with inputs that should
     // not provoke any errors. (The accounts and contracts will be set up before if needed)
-    correct_inputs: bool
+    correct_inputs: bool,
 }
 /// Use u8 as an account id to simplify the address space and re-use accounts
 /// more often.
-type AccountId = u8; 
-
+type AccountId = u8;
 
 #[tokio::main]
 async fn main() {
-
     // Set up the fixed test environment
     let token_vesting_testenv = TokenVestingEnv {
         system_program_id: system_program::id(),
         sysvarclock_program_id: sysvar::clock::id(),
         token_program_id: spl_token::id(),
-        vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap(),
-        mint_authority: Keypair::new()
+        vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA")
+            .unwrap(),
+        mint_authority: Keypair::new(),
     };
 
     loop {
@@ -68,21 +74,30 @@ async fn main() {
             processor!(Processor::process_instruction),
         );
         //TODO
-        let good_payer = Keypair::new(); 
-        program_test.add_account(good_payer.pubkey(), Account {
-                    lamports: u32::MAX as u64,
-                    ..Account::default()
-        });
+        let good_payer = Keypair::new();
+        program_test.add_account(
+            good_payer.pubkey(),
+            Account {
+                lamports: u32::MAX as u64,
+                ..Account::default()
+            },
+        );
 
         let (banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
 
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
             // print!("{:?}",fuzz_instructions.len());
-            block_on(run_fuzz_instructions(&token_vesting_testenv, banks_client, fuzz_instructions, &banks_payer, &good_payer, recent_blockhash));
+            block_on(run_fuzz_instructions(
+                &token_vesting_testenv,
+                banks_client,
+                fuzz_instructions,
+                &banks_payer,
+                &good_payer,
+                recent_blockhash,
+            ));
         });
     }
 }
-
 
 async fn run_fuzz_instructions(
     token_vesting_testenv: &TokenVestingEnv,
@@ -90,7 +105,7 @@ async fn run_fuzz_instructions(
     fuzz_instructions: Vec<FuzzInstruction>,
     banks_payer: &Keypair,
     good_payer: &Keypair,
-    recent_blockhash: Hash
+    recent_blockhash: Hash,
 ) {
     // keep track of all accounts
     let mut vesting_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
@@ -102,13 +117,12 @@ async fn run_fuzz_instructions(
     let mut new_destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut mint_keys: HashMap<AccountId, Keypair> = HashMap::new();
     let mut payer_keys: HashMap<AccountId, Keypair> = HashMap::new();
-    
+
     let mut global_output_instructions = vec![];
     let mut global_signer_keys = vec![];
 
     for fuzz_instruction in fuzz_instructions {
-        
-        // Add accounts         
+        // Add accounts
         vesting_account_keys
             .entry(fuzz_instruction.vesting_account_key)
             .or_insert_with(|| Pubkey::new_unique());
@@ -142,42 +156,44 @@ async fn run_fuzz_instructions(
             &fuzz_instruction,
             &good_payer,
             mint_keys.get(&fuzz_instruction.mint_key).unwrap(),
-            vesting_account_keys.get(&fuzz_instruction.vesting_account_key).unwrap(),
-            vesting_token_account_keys.get(&fuzz_instruction.vesting_token_account_key).unwrap(),
-            source_token_account_owner_keys.get(
-                &fuzz_instruction.source_token_account_owner_key
-            ).unwrap(),
-            source_token_account_keys.get(
-                &fuzz_instruction.source_token_account_key
-            ).unwrap(),
-            destination_token_owner_keys.get(
-                &fuzz_instruction.destination_token_owner_key
-            ).unwrap(),
-            destination_token_keys.get(
-                &fuzz_instruction.destination_token_key
-            ).unwrap(),
-            new_destination_token_keys.get(
-                &fuzz_instruction.new_destination_token_key
-            ).unwrap(), 
-            payer_keys.get(&fuzz_instruction.payer_key).unwrap()
+            vesting_account_keys
+                .get(&fuzz_instruction.vesting_account_key)
+                .unwrap(),
+            vesting_token_account_keys
+                .get(&fuzz_instruction.vesting_token_account_key)
+                .unwrap(),
+            source_token_account_owner_keys
+                .get(&fuzz_instruction.source_token_account_owner_key)
+                .unwrap(),
+            source_token_account_keys
+                .get(&fuzz_instruction.source_token_account_key)
+                .unwrap(),
+            destination_token_owner_keys
+                .get(&fuzz_instruction.destination_token_owner_key)
+                .unwrap(),
+            destination_token_keys
+                .get(&fuzz_instruction.destination_token_key)
+                .unwrap(),
+            new_destination_token_keys
+                .get(&fuzz_instruction.new_destination_token_key)
+                .unwrap(),
+            payer_keys.get(&fuzz_instruction.payer_key).unwrap(),
         );
         global_output_instructions.append(&mut output_instructions);
         global_signer_keys.append(&mut signer_keys);
     }
     //TODO
-    let bad_payer = Keypair::new(); 
-
+    let bad_payer = Keypair::new();
 
     // Process transaction on test network
-    let mut transaction = Transaction::new_with_payer(
-        &global_output_instructions,
-        Some(&good_payer.pubkey()),
-    );
-    let signers = [good_payer].iter().map(|&v| v).chain(global_signer_keys.iter()).collect::<Vec<&Keypair>>();
-    transaction.partial_sign(
-        &signers,
-        recent_blockhash
-    );
+    let mut transaction =
+        Transaction::new_with_payer(&global_output_instructions, Some(&good_payer.pubkey()));
+    let signers = [good_payer]
+        .iter()
+        .map(|&v| v)
+        .chain(global_signer_keys.iter())
+        .collect::<Vec<&Keypair>>();
+    transaction.partial_sign(&signers, recent_blockhash);
     banks_client.process_transaction(transaction).await.unwrap();
     // TODO catch the "correct" errors, cannot parse errors coming from banks_client
 
@@ -194,7 +210,6 @@ async fn run_fuzz_instructions(
     // );
 }
 
-
 fn run_fuzz_instruction(
     token_vesting_testenv: &TokenVestingEnv,
     fuzz_instruction: &FuzzInstruction,
@@ -208,38 +223,38 @@ fn run_fuzz_instruction(
     destination_token_owner_key: &Keypair,
     destination_token_key: &Pubkey,
     new_destination_token_key: &Pubkey,
-    payer_key: &Keypair
+    payer_key: &Keypair,
 ) -> (Vec<Instruction>, Vec<Keypair>) {
-
     // Execute the fuzzing in a more restrained way in order to go deeper into the program branches.
     // For each possible fuzz instruction we first instantiate the needed accounts for the instruction
     if true {
-
         let mut correct_seeds = fuzz_instruction.seeds;
         let (correct_vesting_account_key, bump) = Pubkey::find_program_address(
             &[&correct_seeds[..31]],
-            &token_vesting_testenv.vesting_program_id
+            &token_vesting_testenv.vesting_program_id,
         );
         correct_seeds[31] = bump;
-        let correct_vesting_token_key = get_associated_token_address(
-            &correct_vesting_account_key,
-            &mint_key.pubkey()
-        );
+        let correct_vesting_token_key =
+            get_associated_token_address(&correct_vesting_account_key, &mint_key.pubkey());
 
         match fuzz_instruction {
             // FuzzInstruction {
             //     instruction: VestingInstruction::Init{ .. },
             //     ..
             _ => {
-                return (vec![init(
-                    &token_vesting_testenv.system_program_id,
-                    &token_vesting_testenv.vesting_program_id,
-                    &good_payer.pubkey(),
-                    &correct_vesting_account_key,
-                    correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
-                ).unwrap()], vec![]);
-            },
+                return (
+                    vec![init(
+                        &token_vesting_testenv.system_program_id,
+                        &token_vesting_testenv.vesting_program_id,
+                        &good_payer.pubkey(),
+                        &correct_vesting_account_key,
+                        correct_seeds,
+                        fuzz_instruction.number_of_schedules as u64,
+                    )
+                    .unwrap()],
+                    vec![],
+                );
+            }
 
             FuzzInstruction {
                 instruction: VestingInstruction::Create { .. },
@@ -251,8 +266,9 @@ fn run_fuzz_instruction(
                     &good_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
-                ).unwrap()];
+                    fuzz_instruction.number_of_schedules as u64,
+                )
+                .unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
                     fuzz_instruction,
@@ -265,16 +281,21 @@ fn run_fuzz_instruction(
                     &correct_vesting_token_key,
                     correct_seeds,
                     mint_key,
-                    fuzz_instruction.source_token_amount
+                    fuzz_instruction.source_token_amount,
                 );
                 instructions_acc.append(&mut create_instructions);
-                return (instructions_acc, vec![clone_keypair(mint_key),
-                    clone_keypair(&token_vesting_testenv.mint_authority),
-                    clone_keypair(source_token_account_owner_key)]);
-            },
+                return (
+                    instructions_acc,
+                    vec![
+                        clone_keypair(mint_key),
+                        clone_keypair(&token_vesting_testenv.mint_authority),
+                        clone_keypair(source_token_account_owner_key),
+                    ],
+                );
+            }
 
             FuzzInstruction {
-                instruction: VestingInstruction::Unlock{ .. },
+                instruction: VestingInstruction::Unlock { .. },
                 ..
             } => {
                 let mut instructions_acc = vec![init(
@@ -283,8 +304,9 @@ fn run_fuzz_instruction(
                     &good_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
-                ).unwrap()];
+                    fuzz_instruction.number_of_schedules as u64,
+                )
+                .unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
                     fuzz_instruction,
@@ -297,7 +319,7 @@ fn run_fuzz_instruction(
                     &correct_vesting_token_key,
                     correct_seeds,
                     mint_key,
-                    fuzz_instruction.source_token_amount
+                    fuzz_instruction.source_token_amount,
                 );
                 instructions_acc.append(&mut create_instructions);
 
@@ -308,18 +330,22 @@ fn run_fuzz_instruction(
                     &correct_vesting_account_key,
                     &correct_vesting_token_key,
                     destination_token_key,
-                    correct_seeds
-                ).unwrap();
+                    correct_seeds,
+                )
+                .unwrap();
                 instructions_acc.push(unlock_instruction);
-            return (instructions_acc, vec![
-                clone_keypair(mint_key),
-                clone_keypair(&token_vesting_testenv.mint_authority),
-                clone_keypair(source_token_account_owner_key),
-                ]);
-            },
+                return (
+                    instructions_acc,
+                    vec![
+                        clone_keypair(mint_key),
+                        clone_keypair(&token_vesting_testenv.mint_authority),
+                        clone_keypair(source_token_account_owner_key),
+                    ],
+                );
+            }
 
             FuzzInstruction {
-                instruction: VestingInstruction::ChangeDestination{ .. },
+                instruction: VestingInstruction::ChangeDestination { .. },
                 ..
             } => {
                 let mut instructions_acc = vec![init(
@@ -328,8 +354,9 @@ fn run_fuzz_instruction(
                     &good_payer.pubkey(),
                     &correct_vesting_account_key,
                     correct_seeds,
-                    fuzz_instruction.number_of_schedules as u64
-                ).unwrap()];
+                    fuzz_instruction.number_of_schedules as u64,
+                )
+                .unwrap()];
                 let mut create_instructions = create_fuzzinstruction(
                     token_vesting_testenv,
                     fuzz_instruction,
@@ -342,52 +369,59 @@ fn run_fuzz_instruction(
                     &correct_vesting_token_key,
                     correct_seeds,
                     mint_key,
-                    fuzz_instruction.source_token_amount
+                    fuzz_instruction.source_token_amount,
                 );
                 instructions_acc.append(&mut create_instructions);
 
                 let new_destination_instruction = create_associated_token_account(
                     &good_payer.pubkey(),
                     &Pubkey::new_unique(), // Arbitrary
-                    &mint_key.pubkey()
+                    &mint_key.pubkey(),
                 );
                 instructions_acc.push(new_destination_instruction);
-                
+
                 let change_instruction = change_destination(
                     &token_vesting_testenv.vesting_program_id,
                     &correct_vesting_account_key,
                     &destination_token_owner_key.pubkey(),
                     &destination_token_key,
                     new_destination_token_key,
-                    correct_seeds
-                ).unwrap();
+                    correct_seeds,
+                )
+                .unwrap();
                 instructions_acc.push(change_instruction);
-                return (instructions_acc, vec![
-                    clone_keypair(mint_key),
-                    clone_keypair(&token_vesting_testenv.mint_authority),
-                    clone_keypair(source_token_account_owner_key),
-                    clone_keypair(destination_token_owner_key),
-                ]);
+                return (
+                    instructions_acc,
+                    vec![
+                        clone_keypair(mint_key),
+                        clone_keypair(&token_vesting_testenv.mint_authority),
+                        clone_keypair(source_token_account_owner_key),
+                        clone_keypair(destination_token_owner_key),
+                    ],
+                );
             }
         };
 
     // Execute a more random input fuzzing (these should give an error almost surely)
     } else {
         match fuzz_instruction {
-
             // FuzzInstruction {
             //     instruction: VestingInstruction::Init{ .. },
             //     ..
             _ => {
-                return (vec![init(
-                    &token_vesting_testenv.system_program_id,
-                    &token_vesting_testenv.vesting_program_id,
-                    &payer_key.pubkey(),
-                    vesting_account_key,
-                    fuzz_instruction.seeds,
-                    fuzz_instruction.number_of_schedules as u64
-                ).unwrap()], vec![]);
-            },
+                return (
+                    vec![init(
+                        &token_vesting_testenv.system_program_id,
+                        &token_vesting_testenv.vesting_program_id,
+                        &payer_key.pubkey(),
+                        vesting_account_key,
+                        fuzz_instruction.seeds,
+                        fuzz_instruction.number_of_schedules as u64,
+                    )
+                    .unwrap()],
+                    vec![],
+                );
+            }
 
             FuzzInstruction {
                 instruction: VestingInstruction::Create { .. },
@@ -403,16 +437,17 @@ fn run_fuzz_instruction(
                     destination_token_key,
                     &mint_key.pubkey(),
                     fuzz_instruction.schedules.clone(),
-                    fuzz_instruction.seeds
-                ).unwrap();
+                    fuzz_instruction.seeds,
+                )
+                .unwrap();
                 return (
                     vec![create_instructions],
-                    vec![clone_keypair(source_token_account_owner_key)]
+                    vec![clone_keypair(source_token_account_owner_key)],
                 );
-            },
+            }
 
             FuzzInstruction {
-                instruction: VestingInstruction::Unlock{ .. },
+                instruction: VestingInstruction::Unlock { .. },
                 ..
             } => {
                 let unlock_instruction = unlock(
@@ -423,15 +458,13 @@ fn run_fuzz_instruction(
                     vesting_token_account_key,
                     destination_token_key,
                     fuzz_instruction.seeds,
-                ).unwrap();
-                return (
-                    vec![unlock_instruction],
-                    vec![]
-                );            
-            },
+                )
+                .unwrap();
+                return (vec![unlock_instruction], vec![]);
+            }
 
             FuzzInstruction {
-                instruction: VestingInstruction::ChangeDestination{ .. },
+                instruction: VestingInstruction::ChangeDestination { .. },
                 ..
             } => {
                 let change_instruction = change_destination(
@@ -441,17 +474,16 @@ fn run_fuzz_instruction(
                     &destination_token_key,
                     new_destination_token_key,
                     fuzz_instruction.seeds,
-                ).unwrap();
+                )
+                .unwrap();
                 return (
                     vec![change_instruction],
-                    vec![clone_keypair(destination_token_owner_key)]
+                    vec![clone_keypair(destination_token_owner_key)],
                 );
             }
         };
     }
-
 }
-
 
 // A correct vesting create fuzz instruction
 fn create_fuzzinstruction(
@@ -466,38 +498,37 @@ fn create_fuzzinstruction(
     correct_vesting_token_key: &Pubkey,
     correct_seeds: [u8; 32],
     mint_key: &Keypair,
-    source_amount: u64
+    source_amount: u64,
 ) -> Vec<Instruction> {
-
     // Initialize the token mint account
     let mut instructions_acc = mint_init_instruction(
         &banks_payer,
         &mint_key,
-        &token_vesting_testenv.mint_authority
+        &token_vesting_testenv.mint_authority,
     );
-    
+
     // Create the associated token accounts
     let source_instruction = create_associated_token_account(
         &banks_payer.pubkey(),
         &source_token_account_owner_key.pubkey(),
-        &mint_key.pubkey()
+        &mint_key.pubkey(),
     );
     instructions_acc.push(source_instruction);
 
     let vesting_instruction = create_associated_token_account(
-            &banks_payer.pubkey(),
-            &correct_vesting_account_key,
-            &mint_key.pubkey()
+        &banks_payer.pubkey(),
+        &correct_vesting_account_key,
+        &mint_key.pubkey(),
     );
     instructions_acc.push(vesting_instruction);
 
     let destination_instruction = create_associated_token_account(
-            &banks_payer.pubkey(),
-            &destination_token_owner_key,
-            &mint_key.pubkey()
+        &banks_payer.pubkey(),
+        &destination_token_owner_key,
+        &mint_key.pubkey(),
     );
     instructions_acc.push(destination_instruction);
-   
+
     // Credit the source account
     let setup_instruction = mint_to(
         &spl_token::id(),
@@ -505,13 +536,14 @@ fn create_fuzzinstruction(
         &source_token_account_key,
         &token_vesting_testenv.mint_authority.pubkey(),
         &[],
-        source_amount
-    ).unwrap();
+        source_amount,
+    )
+    .unwrap();
     instructions_acc.push(setup_instruction);
 
-    let used_number_of_schedules = fuzz_instruction.number_of_schedules.min(
-        fuzz_instruction.schedules.len().try_into().unwrap()
-    );
+    let used_number_of_schedules = fuzz_instruction
+        .number_of_schedules
+        .min(fuzz_instruction.schedules.len().try_into().unwrap());
     // Initialize the vesting program account
     let create_instruction = create(
         &token_vesting_testenv.vesting_program_id,
@@ -524,34 +556,35 @@ fn create_fuzzinstruction(
         &mint_key.pubkey(),
         fuzz_instruction.schedules.clone()[..used_number_of_schedules.into()].into(),
         correct_seeds,
-    ).unwrap();
+    )
+    .unwrap();
     instructions_acc.push(create_instruction);
 
     return instructions_acc;
 }
 
-
 // Helper functions
 fn mint_init_instruction(
     payer: &Keypair,
-    mint:&Keypair, 
-    mint_authority: &Keypair) -> Vec<Instruction> {
+    mint: &Keypair,
+    mint_authority: &Keypair,
+) -> Vec<Instruction> {
     let instructions = vec![
         system_instruction::create_account(
             &payer.pubkey(),
             &mint.pubkey(),
             Rent::default().minimum_balance(82),
             82,
-            &spl_token::id()
-    
+            &spl_token::id(),
         ),
         initialize_mint(
-            &spl_token::id(), 
-            &mint.pubkey(), 
+            &spl_token::id(),
+            &mint.pubkey(),
             &mint_authority.pubkey(),
-            None, 
-            0
-        ).unwrap(),
+            None,
+            0,
+        )
+        .unwrap(),
     ];
     return instructions;
 }

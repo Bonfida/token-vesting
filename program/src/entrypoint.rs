@@ -1,6 +1,9 @@
 // #![cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
 
-use solana_program::{account_info::{AccountInfo}, entrypoint, entrypoint::ProgramResult, msg, program_error::PrintProgramError, pubkey::Pubkey};
+use solana_program::{
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
+    program_error::PrintProgramError, pubkey::Pubkey,
+};
 
 use crate::{error::VestingError, processor::Processor};
 

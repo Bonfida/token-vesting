@@ -23,7 +23,6 @@ This code is unaudited use at your own risk.
 ## TODO: internal
 
 - Parse config file in CLI
-- Correct seeds in js
 
 ## TODO: Open issues for the following bugs
 
