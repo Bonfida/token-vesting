@@ -20,6 +20,7 @@ new_dest_token: CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh
 
 CMDS (don't forget the url):
 
+```
 solana-keygen new --outfile ~/.config/solana/id.json
 solana-keygen new --outfile ~/.config/solana/id_dest.json
 solana-keygen new --outfile ~/.config/solana/id_new_dest.json
@@ -66,6 +67,7 @@ echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                      
 unlock                                                                              \
 --seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
 --payer ~/.config/solana/id.json" | bash
+```
 
 LINKS:
 
