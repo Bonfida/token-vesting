@@ -68,11 +68,6 @@ async fn main() {
             processor!(process_instruction),
         );
     
-        let correct_payer = Keypair::new(); 
-        program_test.add_account(correct_payer.pubkey(), Account {
-                    lamports: u32::MAX as u64,
-                    ..Account::default()
-        });
         program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
             lamports: u32::MAX as u64,
             ..Account::default()
@@ -80,7 +75,7 @@ async fn main() {
         let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
 
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
-            block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, &correct_payer, recent_blockhash));
+            block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, recent_blockhash));
         });
     }
 }
@@ -90,7 +85,6 @@ async fn run_fuzz_instructions(
     token_vesting_testenv: &TokenVestingEnv,
     banks_client: &mut BanksClient,
     fuzz_instructions: Vec<FuzzInstruction>,
-    banks_payer: &Keypair,
     correct_payer: &Keypair,
     recent_blockhash: Hash
 ) {
@@ -98,7 +92,6 @@ async fn run_fuzz_instructions(
     let mut vesting_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut vesting_token_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut source_token_account_owner_keys: HashMap<AccountId, Keypair> = HashMap::new();
-    let mut source_token_account_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut destination_token_owner_keys: HashMap<AccountId, Keypair> = HashMap::new();
     let mut destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut new_destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
@@ -120,9 +113,6 @@ async fn run_fuzz_instructions(
         source_token_account_owner_keys
             .entry(fuzz_instruction.source_token_account_owner_key)
             .or_insert_with(|| Keypair::new());
-        source_token_account_keys
-            .entry(fuzz_instruction.source_token_account_key)
-            .or_insert_with(|| Pubkey::new_unique());
         destination_token_owner_keys
             .entry(fuzz_instruction.destination_token_owner_key)
             .or_insert_with(|| Keypair::new());
@@ -149,9 +139,6 @@ async fn run_fuzz_instructions(
             source_token_account_owner_keys.get(
                 &fuzz_instruction.source_token_account_owner_key
             ).unwrap(),
-            source_token_account_keys.get(
-                &fuzz_instruction.source_token_account_key
-            ).unwrap(),
             destination_token_owner_keys.get(
                 &fuzz_instruction.destination_token_owner_key
             ).unwrap(),
@@ -176,51 +163,39 @@ async fn run_fuzz_instructions(
         &signers,
         recent_blockhash
     );
-    // assert_eq!(
-    //     banks_client
-    //         .process_transaction(transaction)
-    //         .await
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     TransactionError::InstructionError(
-    //         0,
-    //         InstructionError::Custom(LendingError::AlreadyInitialized as u32)
-    //     )
-    // );
-    
-    // TODO catch the "correct" errors, cannot parse errors coming from banks_client
-    // banks_client.process_transaction(transaction).await.unwrap();
 
-    let result: Option<InstructionError> = match banks_client.process_transaction(transaction).await.unwrap_err().unwrap() {
-        TransactionError::InstructionError( _, e) => {
-            Some(e)
-        },
-        TransactionError::SignatureFailure => {
-            None
-        },
-        _ => panic!()
-    };
-    
-    match result {
-        Some(InstructionError::InvalidArgument) => {
-            
-        },
-        Some(InstructionError::InvalidInstructionData) => {
-            
-        },
-        Some(InstructionError::InvalidAccountData) => {
-            
-        },
-        Some(InstructionError::InsufficientFunds) => {
-            
-        },
-        Some(InstructionError::Custom(0)) => {
-            
-        },
-        _ => {
-            Err(result).unwrap()
+    banks_client.process_transaction(transaction).await.unwrap_or_else(|e| {
+        if let TransportError::TransactionError(te) = e {
+            match te {
+                TransactionError::InstructionError(_, ie) => {
+                    match ie {
+                        InstructionError::InvalidArgument
+                        | InstructionError::InvalidInstructionData
+                        | InstructionError::InvalidAccountData
+                        | InstructionError::InsufficientFunds
+                        | InstructionError::AccountAlreadyInitialized
+                        | InstructionError::InvalidSeeds
+                        | InstructionError::Custom(0) => {},
+                        _ => {
+                            print!("{:?}", ie);
+                            Err(ie).unwrap()
+                        }
+                    }
+                },
+                TransactionError::SignatureFailure
+                | TransactionError::InvalidAccountForFee
+                | TransactionError::InsufficientFundsForFee => {},
+                _ => {
+                    print!("{:?}", te);
+                    panic!()
+                }
+            }
+
+        } else {
+            print!("{:?}", e);
+            panic!()
         }
-    }
+    });
 }
 
 
@@ -232,7 +207,6 @@ fn run_fuzz_instruction(
     vesting_account_key: &Pubkey,
     vesting_token_account_key: &Pubkey,
     source_token_account_owner_key: &Keypair,
-    source_token_account_key: &Pubkey,
     destination_token_owner_key: &Keypair,
     destination_token_key: &Pubkey,
     new_destination_token_key: &Pubkey,
