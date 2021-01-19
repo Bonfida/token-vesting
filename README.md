@@ -20,7 +20,7 @@ This code is unaudited use at your own risk.
 - `js` : JavaScript binding to interact with on-chain token vesting contract
 - `program` : The BPF compatible token vesting on-chain program/smart contract
 
-![diagram](assets/structure.svg)
+![diagram](assets/structure.png)
 
 ## TODO: Open issues for the following bugs
 
