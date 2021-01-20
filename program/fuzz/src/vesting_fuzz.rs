@@ -11,7 +11,7 @@ use solana_program_test::{BanksClient, ProgramTest, processor};
 use solana_sdk::{signature::Keypair, signature::Signer, system_instruction, transaction::Transaction, transport::TransportError};
 use arbitrary::Arbitrary;
 use std::collections::HashMap;
-use token_vesting::{instruction::{Schedule, VestingInstruction}, entrypoint::process_instruction};
+use token_vesting::{instruction::{Schedule, VestingInstruction}, processor::Processor};
 use token_vesting::instruction::{init, unlock, change_destination, create};
 use solana_sdk::{account::Account, instruction::InstructionError, transaction::TransactionError};
 struct TokenVestingEnv {
@@ -24,7 +24,7 @@ struct TokenVestingEnv {
 
 #[derive(Debug, Arbitrary, Clone)]
 struct FuzzInstruction {
-    vesting_account_key: AccountId,           
+    vesting_account_key: AccountId,
     vesting_token_account_key: AccountId,
     source_token_account_owner_key: AccountId,
     source_token_account_key: AccountId,
@@ -45,7 +45,7 @@ struct FuzzInstruction {
 }
 /// Use u8 as an account id to simplify the address space and re-use accounts
 /// more often.
-type AccountId = u8; 
+type AccountId = u8;
 
 
 #[tokio::main]
@@ -59,20 +59,20 @@ async fn main() {
         vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap(),
         mint_authority: Keypair::new()
     };
-    
+
     loop {
         // Initialize and start the test network
         let mut program_test = ProgramTest::new(
             "token_vesting",
             token_vesting_testenv.vesting_program_id,
-            processor!(process_instruction),
+            processor!(Processor::process_instruction),
         );
-    
+
         program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
             lamports: u32::MAX as u64,
             ..Account::default()
         });
-        let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
+        let (mut banks_client, banks_payer, recent_blockhash) = program_test.start().await;
 
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
             block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, recent_blockhash));
@@ -97,13 +97,13 @@ async fn run_fuzz_instructions(
     let mut new_destination_token_keys: HashMap<AccountId, Pubkey> = HashMap::new();
     let mut mint_keys: HashMap<AccountId, Keypair> = HashMap::new();
     let mut payer_keys: HashMap<AccountId, Keypair> = HashMap::new();
-    
+
     let mut global_output_instructions = vec![];
     let mut global_signer_keys = vec![];
 
     for fuzz_instruction in fuzz_instructions {
-        
-        // Add accounts         
+
+        // Add accounts
         vesting_account_keys
             .entry(fuzz_instruction.vesting_account_key)
             .or_insert_with(|| Pubkey::new_unique());
@@ -358,7 +358,7 @@ fn run_fuzz_instruction(
                     &mint_key.pubkey()
                 );
                 instructions_acc.push(new_destination_instruction);
-                
+
                 let change_instruction = change_destination(
                     &token_vesting_testenv.vesting_program_id,
                     &correct_vesting_account_key,
@@ -433,7 +433,7 @@ fn run_fuzz_instruction(
                 return (
                     vec![unlock_instruction],
                     vec![]
-                );            
+                );
             },
 
             FuzzInstruction {
@@ -474,14 +474,14 @@ fn create_fuzzinstruction(
     mint_key: &Keypair,
     source_amount: u64
 ) -> Vec<Instruction> {
-    
+
     // Initialize the token mint account
     let mut instructions_acc = mint_init_instruction(
         &payer,
         &mint_key,
         &token_vesting_testenv.mint_authority
     );
-    
+
     // Create the associated token accounts
     let source_instruction = create_associated_token_account(
         &payer.pubkey(),
@@ -503,7 +503,7 @@ fn create_fuzzinstruction(
             &mint_key.pubkey()
     );
     instructions_acc.push(destination_instruction);
-   
+
     // Credit the source account
     let setup_instruction = mint_to(
         &spl_token::id(),
@@ -540,7 +540,7 @@ fn create_fuzzinstruction(
 // Helper functions
 fn mint_init_instruction(
     payer: &Keypair,
-    mint:&Keypair, 
+    mint:&Keypair,
     mint_authority: &Keypair) -> Vec<Instruction> {
     let instructions = vec![
         system_instruction::create_account(
@@ -549,13 +549,13 @@ fn mint_init_instruction(
             Rent::default().minimum_balance(82),
             82,
             &spl_token::id()
-    
+
         ),
         initialize_mint(
-            &spl_token::id(), 
-            &mint.pubkey(), 
+            &spl_token::id(),
+            &mint.pubkey(),
             &mint_authority.pubkey(),
-            None, 
+            None,
             0
         ).unwrap(),
     ];
