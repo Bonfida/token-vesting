@@ -1,5 +1,3 @@
-// #![cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
-
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
     program_error::PrintProgramError, pubkey::Pubkey,
@@ -23,4 +21,5 @@ pub fn process_instruction(
     Ok(())
 }
 
+// Deploy the program with the following id:
 // solana_program::declare_id!("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA");

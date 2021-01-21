@@ -4,8 +4,7 @@ use solana_program::{
     instruction::{AccountMeta, Instruction},
     msg,
     program_error::ProgramError,
-    pubkey::Pubkey,
-    sysvar::rent
+    pubkey::Pubkey
 };
 
 use std::convert::TryInto;
@@ -235,6 +234,7 @@ impl VestingInstruction {
 // Creates a `Init` instruction
 pub fn init(
     system_program_id: &Pubkey,
+    rent_program_id: &Pubkey,
     vesting_program_id: &Pubkey,
     payer_key: &Pubkey,
     vesting_account: &Pubkey,
@@ -248,7 +248,7 @@ pub fn init(
     .pack();
     let accounts = vec![
         AccountMeta::new_readonly(*system_program_id, false),
-        AccountMeta::new_readonly(rent::id(), false),
+        AccountMeta::new_readonly(*rent_program_id, false),
         AccountMeta::new(*payer_key, true),
         AccountMeta::new(*vesting_account, false),
     ];
