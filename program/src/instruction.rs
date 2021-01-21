@@ -28,9 +28,6 @@ impl Arbitrary for VestingInstruction {
                 });
             }
             1 => {
-                // Limit the number of schedules according to the maximum fixed by the type of
-                // number_schedules in processor
-                // TODO
                 let schedules: [Schedule; 10] = u.arbitrary()?;
                 let key_bytes: [u8; 32] = u.arbitrary()?;
                 let mint_address: Pubkey = Pubkey::new(&key_bytes);
@@ -92,7 +89,6 @@ pub enum VestingInstruction {
         schedules: Vec<Schedule>,
     },
     /// Unlocks a simple vesting contract (SVC) - can only be invoked by the program itself
-    /// TODO only program ?
     /// Accounts expected by this instruction:
     ///
     ///   * Single owner
