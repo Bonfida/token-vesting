@@ -65,7 +65,9 @@ pub enum VestingInstruction {
     ///
     ///   * Single owner
     ///   0. `[]` The system program account
+    ///   1. `[]` The sysvar Rent account
     ///   1. `[signer]` The fee payer account
+    ///   1. `[]` The vesting account
     Init {
         // The seed used to derive the vesting accounts address
         seeds: [u8; 32],
