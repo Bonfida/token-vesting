@@ -56,6 +56,7 @@ async fn test_token_vesting() {
     // Initialize the vesting program account
     let init_instruction = [init(
         &system_program::id(),
+        &sysvar::rent::id(),
         &program_id,
         &payer.pubkey(),
         &vesting_account_key,
