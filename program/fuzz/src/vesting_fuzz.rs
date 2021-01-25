@@ -62,21 +62,22 @@ async fn main() {
         mint_authority: Keypair::new()
     };
 
+    
     loop {
-        // Initialize and start the test network
-        let mut program_test = ProgramTest::new(
-            "token_vesting",
-            token_vesting_testenv.vesting_program_id,
-            processor!(Processor::process_instruction),
-        );
-
-        program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
-            lamports: u32::MAX as u64,
-            ..Account::default()
-        });
-        let (mut banks_client, banks_payer, recent_blockhash) = program_test.start().await;
-
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
+            // Initialize and start the test network
+            let mut program_test = ProgramTest::new(
+                "token_vesting",
+                token_vesting_testenv.vesting_program_id,
+                processor!(Processor::process_instruction),
+            );
+            
+            program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
+                lamports: u32::MAX as u64,
+                ..Account::default()
+            });
+            let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
+
             block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, recent_blockhash));
         });
     }
