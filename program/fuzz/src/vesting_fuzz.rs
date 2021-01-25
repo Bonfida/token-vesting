@@ -18,6 +18,7 @@ struct TokenVestingEnv {
     system_program_id: Pubkey,
     token_program_id: Pubkey,
     sysvarclock_program_id: Pubkey,
+    rent_program_id: Pubkey,
     vesting_program_id: Pubkey,
     mint_authority: Keypair
 }
@@ -55,6 +56,7 @@ async fn main() {
     let token_vesting_testenv = TokenVestingEnv {
         system_program_id: system_program::id(),
         sysvarclock_program_id: sysvar::clock::id(),
+        rent_program_id: sysvar::rent::id(),
         token_program_id: spl_token::id(),
         vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap(),
         mint_authority: Keypair::new()
@@ -239,6 +241,7 @@ fn run_fuzz_instruction(
             } => {
                 return (vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -253,6 +256,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -285,6 +289,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -330,6 +335,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -387,6 +393,7 @@ fn run_fuzz_instruction(
             } => {
                 return (vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &payer_key.pubkey(),
                     vesting_account_key,
