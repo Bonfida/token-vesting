@@ -4,8 +4,7 @@ use solana_program::{
     instruction::{AccountMeta, Instruction},
     msg,
     program_error::ProgramError,
-    pubkey::Pubkey,
-    sysvar::rent
+    pubkey::Pubkey
 };
 
 use std::convert::TryInto;
@@ -28,9 +27,6 @@ impl Arbitrary for VestingInstruction {
                 });
             }
             1 => {
-                // Limit the number of schedules according to the maximum fixed by the type of
-                // number_schedules in processor
-                // TODO
                 let schedules: [Schedule; 10] = u.arbitrary()?;
                 let key_bytes: [u8; 32] = u.arbitrary()?;
                 let mint_address: Pubkey = Pubkey::new(&key_bytes);
@@ -68,7 +64,9 @@ pub enum VestingInstruction {
     ///
     ///   * Single owner
     ///   0. `[]` The system program account
+    ///   1. `[]` The sysvar Rent account
     ///   1. `[signer]` The fee payer account
+    ///   1. `[]` The vesting account
     Init {
         // The seed used to derive the vesting accounts address
         seeds: [u8; 32],
@@ -92,7 +90,6 @@ pub enum VestingInstruction {
         schedules: Vec<Schedule>,
     },
     /// Unlocks a simple vesting contract (SVC) - can only be invoked by the program itself
-    /// TODO only program ?
     /// Accounts expected by this instruction:
     ///
     ///   * Single owner
@@ -237,6 +234,7 @@ impl VestingInstruction {
 // Creates a `Init` instruction
 pub fn init(
     system_program_id: &Pubkey,
+    rent_program_id: &Pubkey,
     vesting_program_id: &Pubkey,
     payer_key: &Pubkey,
     vesting_account: &Pubkey,
@@ -250,7 +248,7 @@ pub fn init(
     .pack();
     let accounts = vec![
         AccountMeta::new_readonly(*system_program_id, false),
-        AccountMeta::new_readonly(rent::id(), false),
+        AccountMeta::new_readonly(*rent_program_id, false),
         AccountMeta::new(*payer_key, true),
         AccountMeta::new(*vesting_account, false),
     ];

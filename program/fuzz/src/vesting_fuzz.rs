@@ -18,6 +18,7 @@ struct TokenVestingEnv {
     system_program_id: Pubkey,
     token_program_id: Pubkey,
     sysvarclock_program_id: Pubkey,
+    rent_program_id: Pubkey,
     vesting_program_id: Pubkey,
     mint_authority: Keypair
 }
@@ -55,26 +56,28 @@ async fn main() {
     let token_vesting_testenv = TokenVestingEnv {
         system_program_id: system_program::id(),
         sysvarclock_program_id: sysvar::clock::id(),
+        rent_program_id: sysvar::rent::id(),
         token_program_id: spl_token::id(),
         vesting_program_id: Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap(),
         mint_authority: Keypair::new()
     };
 
+    
     loop {
-        // Initialize and start the test network
-        let mut program_test = ProgramTest::new(
-            "token_vesting",
-            token_vesting_testenv.vesting_program_id,
-            processor!(Processor::process_instruction),
-        );
-
-        program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
-            lamports: u32::MAX as u64,
-            ..Account::default()
-        });
-        let (mut banks_client, banks_payer, recent_blockhash) = program_test.start().await;
-
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
+            // Initialize and start the test network
+            let mut program_test = ProgramTest::new(
+                "token_vesting",
+                token_vesting_testenv.vesting_program_id,
+                processor!(Processor::process_instruction),
+            );
+            
+            program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
+                lamports: u32::MAX as u64,
+                ..Account::default()
+            });
+            let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
+
             block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, recent_blockhash));
         });
     }
@@ -239,6 +242,7 @@ fn run_fuzz_instruction(
             } => {
                 return (vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -253,6 +257,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -285,6 +290,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -330,6 +336,7 @@ fn run_fuzz_instruction(
             } => {
                 let mut instructions_acc = vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &correct_payer.pubkey(),
                     &correct_vesting_account_key,
@@ -387,6 +394,7 @@ fn run_fuzz_instruction(
             } => {
                 return (vec![init(
                     &token_vesting_testenv.system_program_id,
+                    &token_vesting_testenv.rent_program_id,
                     &token_vesting_testenv.vesting_program_id,
                     &payer_key.pubkey(),
                     vesting_account_key,

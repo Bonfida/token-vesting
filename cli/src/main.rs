@@ -53,6 +53,7 @@ fn command_create_svc(
         // Create and initiliaze the vesting token account
         init(
             &system_program::id(),
+            &sysvar::rent::id(),
             &program_id,
             &payer.pubkey(),
             &vesting_pubkey,

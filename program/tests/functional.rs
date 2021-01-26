@@ -56,6 +56,7 @@ async fn test_token_vesting() {
     // Initialize the vesting program account
     let init_instruction = [init(
         &system_program::id(),
+        &sysvar::rent::id(),
         &program_id,
         &payer.pubkey(),
         &vesting_account_key,
@@ -110,8 +111,8 @@ async fn test_token_vesting() {
 
     let schedules = vec![
         Schedule {amount: 20, release_height: 0},
-        // Schedule {amount: 20, release_height: 2},
-        // Schedule {amount: 20, release_height: 5}
+        Schedule {amount: 20, release_height: 2},
+        Schedule {amount: 20, release_height: 5}
     ];
 
     let test_instructions = [

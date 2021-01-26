@@ -124,6 +124,9 @@ impl Processor {
         };
 
         let mut data = vesting_account.data.borrow_mut();
+        if data.len() != VestingScheduleHeader::LEN + schedules.len() * VestingSchedule::LEN {
+            return Err(ProgramError::InvalidAccountData)
+        }
         state_header.pack_into_slice(&mut data);
 
         let mut offset = VestingScheduleHeader::LEN;
@@ -142,6 +145,11 @@ impl Processor {
             }
             offset += SCHEDULE_SIZE;
         }
+        
+        if Account::unpack(&source_token_account.data.borrow())?.amount < total_amount {
+            msg!("The source token account has insufficient funds.");
+            return Err(ProgramError::InsufficientFunds)
+        };
 
         let transfer_tokens_to_vesting_account = transfer(
             spl_token_account.key,
@@ -256,6 +264,9 @@ impl Processor {
         let destination_token_account_owner = next_account_info(accounts_iter)?;
         let new_destination_token_account = next_account_info(accounts_iter)?;
 
+        if vesting_account.data.borrow().len() < VestingScheduleHeader::LEN {
+            return Err(ProgramError::InvalidAccountData)
+        }
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
         let state = VestingScheduleHeader::unpack(
             &vesting_account.data.borrow()[..VestingScheduleHeader::LEN],

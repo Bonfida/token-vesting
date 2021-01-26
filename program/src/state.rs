@@ -38,6 +38,9 @@ impl Pack for VestingScheduleHeader {
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
+        if src.len() < 65 {
+            return Err(ProgramError::InvalidAccountData)
+        }
         let destination_address = Pubkey::new(&src[..32]);
         let mint_address = Pubkey::new(&src[32..64]);
         let is_initialized = src[64] == 1;
@@ -67,6 +70,9 @@ impl Pack for VestingSchedule {
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
+        if src.len() < 16 {
+            return Err(ProgramError::InvalidAccountData)
+        }
         let release_height = u64::from_le_bytes(src[0..8].try_into().unwrap());
         let amount = u64::from_le_bytes(src[8..16].try_into().unwrap());
         Ok(Self {
