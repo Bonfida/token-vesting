@@ -209,7 +209,7 @@ fn command_info(
 
     for i in 0..schedules.len() {
         msg!("\nSCHEDULE {:?}", i);
-        msg!("Release Height: {:?}", &schedules[i].release_height);
+        msg!("Release Height: {:?}", &schedules[i].release_time);
         msg!("Amount: {:?}", &schedules[i].amount);
     }
 }
@@ -323,8 +323,8 @@ fn main() {
                     ),
             )
             .arg(
-                Arg::with_name("release-heights")
-                    .long("release-heights")
+                Arg::with_name("release-times")
+                    .long("release-times")
                     .value_name("SLOT")
                     .validator(is_slot)
                     .takes_value(true)
@@ -333,7 +333,7 @@ fn main() {
                     .value_terminator("!")
                     .allow_hyphen_values(true)
                     .help(
-                        "Release height in network slots to decide when the contract is \
+                        "Release times in unix timestamp to decide when the contract is \
                         unlockable. Multiple inputs seperated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
                         needs to end with an exclamation mark ( e.g. 1,2,3,! ).",
@@ -479,7 +479,7 @@ fn main() {
             let mut schedules: Vec<Schedule> = Vec::with_capacity(schedule_amounts.len());
             for (&a, &h) in schedule_amounts.iter().zip(schedule_heights.iter()) {
                 schedules.push(Schedule {
-                    release_height: h,
+                    release_time: h,
                     amount: a,
                 });
             }

@@ -2,6 +2,7 @@ import { PublicKey } from '@solana/web3.js';
 import { Numberu64 } from './utils';
 
 export class Schedule {
+  // Release time in unix timestamp
   releaseHeight!: Numberu64;
   amount!: Numberu64;
 

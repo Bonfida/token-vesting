@@ -134,7 +134,7 @@ impl Processor {
 
         for s in schedules.iter() {
             let state_schedule = VestingSchedule {
-                release_height: s.release_height,
+                release_time: s.release_time,
                 amount: s.amount,
             };
             state_schedule.pack_into_slice(&mut data[offset..]);
@@ -213,7 +213,7 @@ impl Processor {
         let mut schedules = unpack_schedules(&packed_state.borrow()[VestingScheduleHeader::LEN..])?;
 
         for s in schedules.iter_mut() {
-            if clock.slot >= s.release_height {
+            if clock.unix_timestamp as u64 >= s.release_time {
                 total_amount_to_transfer += s.amount;
                 s.amount = 0;
             }

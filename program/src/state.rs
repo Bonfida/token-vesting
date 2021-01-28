@@ -7,7 +7,7 @@ use solana_program::{
 use std::convert::TryInto;
 #[derive(Debug, PartialEq)]
 pub struct VestingSchedule {
-    pub release_height: u64,
+    pub release_time: u64,
     pub amount: u64,
 }
 
@@ -58,10 +58,10 @@ impl Pack for VestingSchedule {
     const LEN: usize = 16;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
-        let release_height_bytes = self.release_height.to_le_bytes();
+        let release_time_bytes = self.release_time.to_le_bytes();
         let amount_bytes = self.amount.to_le_bytes();
         for i in 0..8 {
-            dst[i] = release_height_bytes[i];
+            dst[i] = release_time_bytes[i];
         }
 
         for i in 8..16 {
@@ -73,10 +73,10 @@ impl Pack for VestingSchedule {
         if src.len() < 16 {
             return Err(ProgramError::InvalidAccountData)
         }
-        let release_height = u64::from_le_bytes(src[0..8].try_into().unwrap());
+        let release_time = u64::from_le_bytes(src[0..8].try_into().unwrap());
         let amount = u64::from_le_bytes(src[8..16].try_into().unwrap());
         Ok(Self {
-            release_height,
+            release_time,
             amount,
         })
     }
@@ -122,11 +122,11 @@ mod tests {
             is_initialized: true,
         };
         let schedule_state_0 = VestingSchedule {
-            release_height: 30767976,
+            release_time: 30767976,
             amount: 969,
         };
         let schedule_state_1 = VestingSchedule {
-            release_height: 32767076,
+            release_time: 32767076,
             amount: 420,
         };
         let state_size = VestingScheduleHeader::LEN + 2 * VestingSchedule::LEN;
@@ -143,9 +143,9 @@ mod tests {
         expected.extend_from_slice(&header_state.destination_address.to_bytes());
         expected.extend_from_slice(&header_state.mint_address.to_bytes());
         expected.extend_from_slice(&[header_state.is_initialized as u8]);
-        expected.extend_from_slice(&schedule_state_0.release_height.to_le_bytes());
+        expected.extend_from_slice(&schedule_state_0.release_time.to_le_bytes());
         expected.extend_from_slice(&schedule_state_0.amount.to_le_bytes());
-        expected.extend_from_slice(&schedule_state_1.release_height.to_le_bytes());
+        expected.extend_from_slice(&schedule_state_1.release_time.to_le_bytes());
         expected.extend_from_slice(&schedule_state_1.amount.to_le_bytes());
 
         assert_eq!(expected, packed);

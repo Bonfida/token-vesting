@@ -49,7 +49,8 @@ impl Arbitrary for VestingInstruction {
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Schedule {
-    pub release_height: u64,
+    // Schedule release time in unix timestamp
+    pub release_time: u64,
     pub amount: u64,
 }
 
@@ -152,7 +153,7 @@ impl VestingInstruction {
                 let mut schedules: Vec<Schedule> = Vec::with_capacity(number_of_schedules);
                 let mut offset = 96;
                 for _ in 0..number_of_schedules {
-                    let release_height = rest
+                    let release_time = rest
                         .get(offset..offset + 8)
                         .and_then(|slice| slice.try_into().ok())
                         .map(u64::from_le_bytes)
@@ -164,7 +165,7 @@ impl VestingInstruction {
                         .ok_or(InvalidInstruction)?;
                     offset += SCHEDULE_SIZE;
                     schedules.push(Schedule {
-                        release_height,
+                        release_time,
                         amount,
                     })
                 }
@@ -214,7 +215,7 @@ impl VestingInstruction {
                 buf.extend_from_slice(&mint_address.to_bytes());
                 buf.extend_from_slice(&destination_token_address.to_bytes());
                 for s in schedules.iter() {
-                    buf.extend_from_slice(&s.release_height.to_le_bytes());
+                    buf.extend_from_slice(&s.release_time.to_le_bytes());
                     buf.extend_from_slice(&s.amount.to_le_bytes());
                 }
             }
@@ -353,7 +354,7 @@ mod test {
             seeds: [50u8; 32],
             schedules: vec![Schedule {
                 amount: 42,
-                release_height: 250,
+                release_time: 250,
             }],
             mint_address: mint_address.clone(),
             destination_token_address,
