@@ -5,7 +5,6 @@ use std::{convert::TryInto, str::FromStr};
 use spl_associated_token_account::{get_associated_token_address, create_associated_token_account};
 
 use solana_program::{hash::Hash, instruction::Instruction, pubkey::Pubkey, rent::Rent, system_program, sysvar};
-use futures::executor::block_on;
 use honggfuzz::fuzz;
 use solana_program_test::{BanksClient, ProgramTest, processor};
 use solana_sdk::{signature::Keypair, signature::Signer, system_instruction, transaction::Transaction, transport::TransportError};
@@ -49,8 +48,8 @@ struct FuzzInstruction {
 type AccountId = u8;
 
 
-#[tokio::main]
-async fn main() {
+fn main() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
 
     // Set up the fixed test environment
     let token_vesting_testenv = TokenVestingEnv {
@@ -62,7 +61,7 @@ async fn main() {
         mint_authority: Keypair::new()
     };
 
-    
+
     loop {
         fuzz!(|fuzz_instructions: Vec<FuzzInstruction>| {
             // Initialize and start the test network
@@ -71,14 +70,14 @@ async fn main() {
                 token_vesting_testenv.vesting_program_id,
                 processor!(Processor::process_instruction),
             );
-            
+
             program_test.add_account(token_vesting_testenv.mint_authority.pubkey(), Account {
                 lamports: u32::MAX as u64,
                 ..Account::default()
             });
-            let (mut banks_client, banks_payer, recent_blockhash) = block_on(program_test.start());
+            let mut test_state = rt.block_on(program_test.start_with_context());
 
-            block_on(run_fuzz_instructions(&token_vesting_testenv, &mut banks_client, fuzz_instructions, &banks_payer, recent_blockhash));
+            rt.block_on(run_fuzz_instructions(&token_vesting_testenv, &mut test_state.banks_client, fuzz_instructions, &test_state.payer, test_state.last_blockhash));
         });
     }
 }
@@ -524,7 +523,7 @@ fn create_fuzzinstruction(
     instructions_acc.push(setup_instruction);
 
     let used_number_of_schedules = fuzz_instruction.number_of_schedules.min(
-        fuzz_instruction.schedules.len().try_into().unwrap()
+        fuzz_instruction.schedules.len().try_into().unwrap_or(u8::MAX)
     );
     // Initialize the vesting program account
     let create_instruction = create(
