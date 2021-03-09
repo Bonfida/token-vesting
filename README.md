@@ -22,9 +22,3 @@ This code is unaudited use at your own risk.
 
 ![diagram](assets/structure.png)
 
-## TODO: Open issues for the following bugs
-
-- `Instruction::new` serializes vector data wrongly (adds vector length as prefix to byte array)
-- `solana-program-test/lib.rs` - `invoke_signed` - Order of accounts matters. Writability is either not checked or falsely assumed for system program.
-- `ProgramTest::new` does not load native code properly when not finding the .so BPF
-- `ProgramTest` gives unreproducible errors when using it as a fuzzing environment
