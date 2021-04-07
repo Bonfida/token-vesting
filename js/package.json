@@ -1,10 +1,13 @@
 {
-  "name": "vesting-contract-js",
-  "version": "0.1.0",
+  "name": "@bonfida/token-vesting",
+  "version": "0.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/bonfida/token-vesting"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
@@ -18,7 +21,6 @@
     "pretty:fix": "prettier --write 'src/*.[jt]s'"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^17.0.0",
     "@tsconfig/recommended": "^1.0.1",
     "@types/node": "^14.14.20",
     "babel-eslint": "^10.1.0",
