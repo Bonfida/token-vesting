@@ -29,16 +29,20 @@ Trace:
 npm manifest: 
   {
     "name": "@bonfida/token-vesting",
-    "version": "0.1.0",
+    "version": "0.0.1",
     "license": "MIT",
     "repository": {
       "type": "git",
       "url": "https://github.com/bonfida/token-vesting"
     },
+    "publishConfig": {
+      "access": "public"
+    },
     "main": "lib/index.cjs.js",
     "module": "lib/index.esm.js",
     "types": "lib/index.d.ts",
     "scripts": {
+      "prepublish": "tsc",
       "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
       "build": "tsc",
       "lint": "npm run pretty && eslint .",

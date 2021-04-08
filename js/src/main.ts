@@ -250,7 +250,7 @@ const test = async (): Promise<void> => {
   const instructionsChangeDestination = await changeDestination(
     connection,
     VESTING_PROGRAM_ID,
-    destinationAccount,
+    destinationAccount.publicKey,
     newDestinationTokenAccountOwner,
     undefined,
     [Buffer.from(seed, 'hex')],
