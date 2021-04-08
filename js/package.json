@@ -13,6 +13,7 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "scripts": {
+    "prepublish": "tsc",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
     "build": "tsc",
     "lint": "npm run pretty && eslint .",

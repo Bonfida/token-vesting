@@ -29,9 +29,13 @@ import {
   destinationAccount,
   newDestinationTokenAccountOwner,
 } from './utils';
-import { ContractInfo, Schedule, VestingScheduleHeader } from './state';
+import { ContractInfo, Schedule } from './state';
 import { assert } from 'console';
 import bs58 from 'bs58';
+
+export const TOKEN_VESTING_PROGRAM_ID = new PublicKey(
+  '8cdEhSpRAQaUBzDQL84ZQfNHYYXoP9TLSri8pKYXvUV2',
+);
 
 export async function create(
   connection: Connection,
@@ -166,7 +170,7 @@ export async function getContractInfo(
 export async function changeDestination(
   connection: Connection,
   programId: PublicKey,
-  currentDestinationTokenAccount: Account,
+  currentDestinationTokenAccountPublicKey: PublicKey,
   newDestinationTokenAccountOwner: PublicKey | undefined,
   newDestinationTokenAccount: PublicKey | undefined,
   vestingSeed: Array<Buffer | Uint8Array>,
@@ -195,7 +199,7 @@ export async function changeDestination(
     createChangeDestinationInstruction(
       programId,
       vestingAccountKey,
-      currentDestinationTokenAccount.publicKey,
+      currentDestinationTokenAccountPublicKey,
       contractInfo.destinationAddress,
       newDestinationTokenAccount,
       [seedWord],
