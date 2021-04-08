@@ -1,6 +1,6 @@
 {
   "name": "@bonfida/token-vesting",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -9,9 +9,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
-  "types": "lib/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepublish": "tsc",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/main.ts",
