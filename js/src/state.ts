@@ -3,25 +3,22 @@ import { Numberu64 } from './utils';
 
 export class Schedule {
   // Release time in unix timestamp
-  releaseHeight!: Numberu64;
+  releaseTime!: Numberu64;
   amount!: Numberu64;
 
-  constructor(releaseHeight: Numberu64, amount: Numberu64) {
-    this.releaseHeight = releaseHeight;
+  constructor(releaseTime: Numberu64, amount: Numberu64) {
+    this.releaseTime = releaseTime;
     this.amount = amount;
   }
 
   public toBuffer(): Buffer {
-    return Buffer.concat([
-      this.releaseHeight.toBuffer(),
-      this.amount.toBuffer(),
-    ]);
+    return Buffer.concat([this.releaseTime.toBuffer(), this.amount.toBuffer()]);
   }
 
   static fromBuffer(buf: Buffer): Schedule {
-    const releaseHeight: Numberu64 = Numberu64.fromBuffer(buf.slice(0, 8));
+    const releaseTime: Numberu64 = Numberu64.fromBuffer(buf.slice(0, 8));
     const amount: Numberu64 = Numberu64.fromBuffer(buf.slice(8, 16));
-    return new Schedule(releaseHeight, amount);
+    return new Schedule(releaseTime, amount);
   }
 }
 

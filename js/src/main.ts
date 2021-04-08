@@ -14,20 +14,8 @@ import {
   createUnlockInstruction,
 } from './instructions';
 import {
-  connection,
-  account,
-  VESTING_PROGRAM_ID,
-  tokenPubkey,
-  mintAddress,
-  schedule,
-  signTransactionInstructions,
   findAssociatedTokenAddress,
   createAssociatedTokenAccount,
-  generateRandomSeed,
-  sleep,
-  destinationPubkey,
-  destinationAccount,
-  newDestinationTokenAccountOwner,
 } from './utils';
 import { ContractInfo, Schedule } from './state';
 import { assert } from 'console';
@@ -118,6 +106,7 @@ export async function unlock(
   connection: Connection,
   programId: PublicKey,
   seedWord: Buffer | Uint8Array,
+  mintAddress: PublicKey,
 ): Promise<Array<TransactionInstruction>> {
   seedWord = seedWord.slice(0, 31);
   const [vestingAccountKey, bump] = await PublicKey.findProgramAddress(
@@ -206,65 +195,3 @@ export async function changeDestination(
     ),
   ];
 }
-
-const test = async (): Promise<void> => {
-  const seed = generateRandomSeed();
-  console.log(`Seed ${seed}`);
-  const instructions = await create(
-    connection,
-    VESTING_PROGRAM_ID,
-    Buffer.from(seed, 'hex'),
-    account.publicKey,
-    account.publicKey,
-    tokenPubkey,
-    destinationPubkey,
-    mintAddress,
-    [schedule],
-  );
-  const signed = await signTransactionInstructions(
-    connection,
-    [account],
-    account.publicKey,
-    instructions,
-  );
-  console.log('✅ Successfully created vesting instructions');
-  console.log(`🚚 Transaction signature: ${signed} \n`);
-  await sleep(5 * 1000);
-
-  const instructionsUnlock = await unlock(
-    connection,
-    VESTING_PROGRAM_ID,
-    Buffer.from(seed, 'hex'),
-  );
-
-  const signedUnlock = await signTransactionInstructions(
-    connection,
-    [account],
-    account.publicKey,
-    instructionsUnlock,
-  );
-  console.log('✅ Successfully created unlocking instructions');
-  console.log(`🚚 Transaction signature: ${signedUnlock} \n`);
-  await sleep(5 * 1000);
-
-  const instructionsChangeDestination = await changeDestination(
-    connection,
-    VESTING_PROGRAM_ID,
-    destinationAccount.publicKey,
-    newDestinationTokenAccountOwner,
-    undefined,
-    [Buffer.from(seed, 'hex')],
-  );
-
-  const signedChangeDestination = await signTransactionInstructions(
-    connection,
-    [destinationAccount],
-    destinationAccount.publicKey,
-    instructionsChangeDestination,
-  );
-
-  console.log('✅ Successfully changed destination');
-  console.log(`🚚 Transaction signature: ${signedChangeDestination}`);
-};
-
-test();

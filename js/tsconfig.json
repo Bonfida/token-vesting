@@ -1,34 +1,31 @@
 {
-    "extends": "@tsconfig/recommended/tsconfig.json",
-
-    "ts-node": {
-      "compilerOptions": {
-        "module": "commonjs",
-        "baseUrl": "./",
-        "paths": {
-            "*" : ["types/*"]
-        }
-      }
-    },
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "ts-node": {
     "compilerOptions": {
-      "module": "es2015",
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "target": "es6",
-  
-      "outDir": "./dist/lib",
-      "rootDir": "./src",
-  
-      "noImplicitAny": false,
-      "moduleResolution": "node",
-      "sourceMap": true,
-      "baseUrl": ".",
+      "module": "commonjs",
+      "baseUrl": "./",
       "paths": {
-        "*": ["node_modules/*", "src/types/*"]
-      },
-      "resolveJsonModule": true
+          "*" : ["types/*"]
+      }
+    }
+  },
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2019",
+    "outDir": "dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "noImplicitAny": false,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*", "src/types/*"]
     },
-    "include": ["src/*"],
-    "exclude": ["src/**/*.test.ts", "**/node_modules"]
-  }
-  
+    "resolveJsonModule": true
+  },
+  "include": ["src/*"],
+  "exclude": ["src/**/*.test.ts", "**/node_modules", "dist"]
+}

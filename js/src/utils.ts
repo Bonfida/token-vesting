@@ -118,48 +118,9 @@ export const getAccountFromSeed = (seed: Buffer): Account => {
   return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
 };
 
-// Test params
-
-export const VESTING_PROGRAM_ID: PublicKey = new PublicKey(
-  '5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy',
-);
-
 export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
-
-// Original account
-
-export const walletSeed = Buffer.from('Enter your seed', 'hex');
-
-export const account = getAccountFromSeed(walletSeed);
-
-export const tokenPubkey = new PublicKey('');
-export const mintAddress = new PublicKey('');
-
-// 1st Destination account
-
-export const walletDestinationSeed = Buffer.from('Enter your seed', 'hex');
-
-export const destinationAccount = getAccountFromSeed(walletDestinationSeed);
-
-export const destinationPubkey = new PublicKey('Enter your pubkey');
-
-// 2nd Destination account
-
-export const walletNewDestinationSeed = Buffer.from('Enter your seed', 'hex');
-
-export const newDestinationTokenAccountOwner = new PublicKey(
-  'Enter your pubkey',
-);
-
-export const newDestinationTokenAccount = new PublicKey('Enter your pubkey');
-
-export const schedule: Schedule = new Schedule(
-  new Numberu64(29507188), // Enter the slot height for the vesting schedule
-  new Numberu64(10), // Enter the amount to be vested
-);
-
 export const generateRandomSeed = () => {
   // Generate a random seed
   let seed = '';
