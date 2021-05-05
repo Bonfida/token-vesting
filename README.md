@@ -1,8 +1,12 @@
-## ⚠️ Warning
+This code has been audited by Kudelski ✅
 
-This code is unaudited use at your own risk.
+- Audit report: [Bonfida Token Vesting Report](/audit/Bonfida_SecurityAssessment_Vesting_Final050521.pdf)
 
 # Token vesting contract
+
+## UI
+
+[Bonfida Token Vesting UI](https://vesting.bonfida.com)
 
 ## Goal
 
@@ -21,4 +25,3 @@ This code is unaudited use at your own risk.
 - `program` : The BPF compatible token vesting on-chain program/smart contract
 
 ![diagram](assets/structure.png)
-
