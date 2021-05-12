@@ -30,7 +30,7 @@ honggfuzz = { version = "0.5", optional = true }
 [dev-dependencies]
 solana-sdk = "1.5.6"
 solana-program-test = "1.5.6"
-tokio = { version = "0.3", features = ["macros"]}
+tokio = { version = "1.0", features = ["macros"]}
 
 [lib]
 crate-type = ["cdylib", "lib"]

@@ -191,6 +191,11 @@ impl Processor {
             return Err(ProgramError::InvalidArgument);
         }
 
+        if spl_token_account.key != &spl_token::id() {
+            msg!("The provided spl token program account is invalid");
+            return Err(ProgramError::InvalidArgument)
+        }
+
         let packed_state = &vesting_account.data;
         let header_state =
             VestingScheduleHeader::unpack(&packed_state.borrow()[..VestingScheduleHeader::LEN])?;
