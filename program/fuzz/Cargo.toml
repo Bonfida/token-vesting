@@ -14,7 +14,7 @@ solana-program-test = "1.5.6"
 spl-token = { version = "3.0.1", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "1.0.2", features = ["no-entrypoint"] }
 token-vesting =  { version = "0.1.0", path="..", features=["fuzz", "no-entrypoint"] }
-tokio = { version = "0.3", features = ["macros"]}
+tokio = { version = "1.0", features = ["macros"]}
 
 [[bin]]
 name = "vesting_fuzz"
