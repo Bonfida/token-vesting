@@ -117,6 +117,16 @@ impl Processor {
             return Err(ProgramError::InvalidArgument);
         }
 
+        if vesting_token_account_data.delegate.is_some() {
+            msg!("The vesting token account should not have a delegate authority");
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        if vesting_token_account_data.close_authority.is_some() {
+            msg!("The vesting token account should not have a close authority");
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         let state_header = VestingScheduleHeader {
             destination_address: *destination_token_address,
             mint_address: *mint_address,
