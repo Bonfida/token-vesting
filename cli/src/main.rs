@@ -471,13 +471,13 @@ fn main() {
 
             // Parsing schedules
             let schedule_amounts: Vec<u64> = values_of(arg_matches, "amounts").unwrap();
-            let schedule_heights: Vec<u64> = values_of(arg_matches, "release-heights").unwrap();
-            if schedule_amounts.len() != schedule_heights.len() {
+            let schedule_times: Vec<u64> = values_of(arg_matches, "release-times").unwrap();
+            if schedule_amounts.len() != schedule_times.len() {
                 eprintln!("error: Number of amounts given is not equal to number of release heigts given.");
                 std::process::exit(1);
             }
             let mut schedules: Vec<Schedule> = Vec::with_capacity(schedule_amounts.len());
-            for (&a, &h) in schedule_amounts.iter().zip(schedule_heights.iter()) {
+            for (&a, &h) in schedule_amounts.iter().zip(schedule_times.iter()) {
                 schedules.push(Schedule {
                     release_time: h,
                     amount: a,
