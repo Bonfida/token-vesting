@@ -1,74 +1,103 @@
-## Testing Keys for the devnet
+# Testing
 
-KEYS: 
+Create participants accounts:
+```
+solana-keygen new --outfile ~/.config/solana/id_owner.json --force
+solana-keygen new --outfile ~/.config/solana/id_dest.json --force
+solana-keygen new --outfile ~/.config/solana/id_new_dest.json --force
+```
 
-Program_id: 5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy
+Owner would do all operations, so put some SOL to his account:
+```
+solana airdrop 10 --url https://devnet.solana.com ~/.config/solana/id_owner.json
+```
 
-token_mint: 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC
+Deploy program and copy PROGRAM_ID.
+```
+solana deploy ../program/target/deploy/token_vesting.so --url https://devnet.solana.com --config  ~/.config/solana/id_owner.json
+```
 
-source_owner: ~/.config/solana/id.json
-Pubkey: FbqE3zeiu8ccBgt1xA6F5Yx8bq5T1D5j9eUcqFs4Dsvb
-source_token: EWrBFuSdmMC3wQKvWaCUTLbDhQT3Mpmw2CVViK4P5Xk2
+Create mint and get its public key(MINT):
+```
+spl-token create-token --url https://devnet.solana.com --config  ~/.config/solana/id_owner.json
+```
 
-destination_owner: ~/.config/solana/id_dest.json
-Pubkey: 8vBVs9hATt4C4DeMfheiqJ7kJhX9JQffDQ9bJW4dN7nX
-dest_token: 9dFttH4GjGHqNxfpiRB5m59YdvH9ydHq9cJ6c6v2JR3p
-
-new_destination_owner: ~/.config/solana/id_new_dest.json
-Pubkey: 8bVoQtWUWqeNZcBSTNnWikxcqBzmyNVXVdU148DLDCYG
-new_dest_token: CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh
-
-CMDS (don't forget the url):
+Create source token(TOKEN_ACCOUNT)
+```
+spl-token create-account $MINT --url https://devnet.solana.com --owner ~/.config/solana/id_owner.json
 
 ```
-solana-keygen new --outfile ~/.config/solana/id.json
-solana-keygen new --outfile ~/.config/solana/id_dest.json
-solana-keygen new --outfile ~/.config/solana/id_new_dest.json
-solana airdrop 10 --url https://devnet.solana.com ~/.config/solana/id.json
-solana deploy ../program/target/deploy/token_vesting.so --url https://devnet.solana.com
 
-spl-token create-token
-spl-token create-account 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC --url https://devnet.solana.com --owner KEYPAIR
-spl-token mint 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC 100 --url https://devnet.solana.com KEYPAIR
+Mint test source token:
+```
+spl-token mint $MINT 10000 --url https://devnet.solana.com $TOKEN_ACCOUNT --config  ~/.config/solana/id_owner.json
+```
 
+Create vesting destination token account(ACCOUNT_TOKEN_DEST):
+```
+spl-token create-account $MINT --url https://devnet.solana.com --owner ~/.config/solana/id_dest.json
+```
 
+And new one(ACCOUNT_TOKEN_NEW_DEST):
+```
+spl-token create-account $MINT --url https://devnet.solana.com --owner ~/.config/solana/id_new_dest.json
+```
+
+Build CLI:
+
+```
+cargo build
+```
+
+Create vesting instance and store its SEED value
+```
 echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
 --url https://devnet.solana.com                                                     \
---program_id 5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy                           \
+--program_id $PROGRAM_ID                           \
 create                                                                              \
---mint_address 3wmMWPDkSdKd697arrGWYJ1q4QL1jwGxnANUyXqSV9vC                         \
---source_owner ~/.config/solana/id.json                                             \
---destination_address 8vBVs9hATt4C4DeMfheiqJ7kJhX9JQffDQ9bJW4dN7nX                  \
+--mint_address $MINT                         \
+--source_owner ~/.config/solana/id_owner.json                                             \
+--source_token_address $TOKEN_ACCOUNT                                             \
+--destination_token_address $ACCOUNT_TOKEN_DEST                  \
 --amounts 2,1,3,!                                                                   \
---release-heights 1,28504431,28506000,!                                             \
---payer ~/.config/solana/id.json" | bash               
-
-
-echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
---url https://devnet.solana.com                                                     \
---program_id 5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy                           \
-info                                                                                \
---seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5 " | bash                                          
-
-
-echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
---url https://devnet.solana.com                                                     \
---program_id 5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy                           \
-change-destination                                                                  \
---seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
---current_destination_owner ~/.config/solana/id_dest.json                           \
---new_destination_token_address CrCPEHiRz2bpC3kmtu3vdghhL62GFeRnUeck8RYNBQkh        \
---payer ~/.config/solana/id.json" | bash                           
-
-
-echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
---url https://devnet.solana.com                                                     \
---program_id 5eiTBnbpMsioMR7TbFPLxpj7KLi9c8esrZXYzuW9uEgy                           \
-unlock                                                                              \
---seed LX3EUdRUBUa3TbsYXLEUdj9J3prXkWXvLYSWyYyc2P5                                  \
---payer ~/.config/solana/id.json" | bash
+--release-times 1,28504431,2850600000000000,!                                             \
+--payer ~/.config/solana/id_owner.json"                  \
+--verbose | bash              
 ```
 
-LINKS:
+To use [Associated Token Account](https://spl.solana.com/associated-token-account) as destination use `--destination_address`(with public key of `id_dest`) instead of `--destination_token_address`.
+
+Observe contract state:
+```
+echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
+--url https://devnet.solana.com                                                     \
+--program_id $PROGRAM_ID                           \
+info                                                                                \
+--seed $SEED " | bash                                          
+```
+
+Change owner:
+```
+echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
+--url https://devnet.solana.com                                                     \
+--program_id $PROGRAM_ID                           \
+change-destination                                                                  \
+--seed $SEED                                  \
+--current_destination_owner ~/.config/solana/id_dest.json                           \
+--new_destination_token_address $ACCOUNT_TOKEN_NEW_DEST        \
+--payer ~/.config/solana/id_owner.json" | bash                           
+```
+
+And unlock tokens according schedule:
+```
+echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli                          \
+--url https://devnet.solana.com                                                     \
+--program_id $PROGRAM_ID                           \
+unlock                                                                              \
+--seed $SEED                                  \
+--payer ~/.config/solana/id_owner.json" | bash
+```
+
+## Links
 
 https://spl.solana.com/token
