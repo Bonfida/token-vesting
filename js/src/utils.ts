@@ -4,6 +4,7 @@ import assert from 'assert';
 import nacl from 'tweetnacl';
 import * as bip32 from 'bip32';
 import {
+  Keypair,
   Account,
   Connection,
   Transaction,
@@ -139,7 +140,7 @@ export const sleep = (ms: number): Promise<void> => {
 export const signTransactionInstructions = async (
   // sign and send transaction
   connection: Connection,
-  signers: Array<Account>,
+  signers: Array<Keypair>,
   feePayer: PublicKey,
   txInstructions: Array<TransactionInstruction>,
 ): Promise<string> => {
