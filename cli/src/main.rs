@@ -83,7 +83,7 @@ fn command_create_svc(
 
     let mut transaction = Transaction::new_with_payer(&instructions, Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
 
     rpc_client.send_transaction(&transaction).unwrap();
@@ -125,7 +125,7 @@ fn command_unlock_svc(
 
     let mut transaction = Transaction::new_with_payer(&[unlock_instruction], Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
 
     rpc_client.send_transaction(&transaction).unwrap();
@@ -168,7 +168,7 @@ fn command_change_destination(
 
     let mut transaction = Transaction::new_with_payer(&[unlock_instruction], Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(
         &[&payer, &destination_token_account_owner],
         recent_blockhash,
