@@ -88,11 +88,7 @@ fn command_create_svc(
 
     rpc_client.send_transaction(&transaction).unwrap();
 
-    msg!(
-        "\nThe seed of the contract is: {:?}",
-        Pubkey::new_from_array(vesting_seed)
-    );
-    msg!("Please write it down as it is needed to interact with the contract.");
+    msg!("{:?}", Pubkey::new_from_array(vesting_seed))
 }
 
 fn command_unlock_svc(
