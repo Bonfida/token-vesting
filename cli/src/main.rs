@@ -86,7 +86,9 @@ fn command_create_svc(
     let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
 
-    rpc_client.send_transaction(&transaction).unwrap();
+    rpc_client
+        .send_and_confirm_transaction(&transaction)
+        .unwrap();
 
     msg!("{:?}", Pubkey::new_from_array(vesting_seed))
 }
@@ -124,7 +126,9 @@ fn command_unlock_svc(
     let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
 
-    rpc_client.send_transaction(&transaction).unwrap();
+    rpc_client
+        .send_and_confirm_transaction(&transaction)
+        .unwrap();
 }
 
 fn command_change_destination(
@@ -170,7 +174,9 @@ fn command_change_destination(
         recent_blockhash,
     );
 
-    rpc_client.send_transaction(&transaction).unwrap();
+    rpc_client
+        .send_and_confirm_transaction(&transaction)
+        .unwrap();
 }
 
 fn command_info(
