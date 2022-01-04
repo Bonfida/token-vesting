@@ -7,7 +7,10 @@ use solana_clap_utils::{
 };
 use solana_client::rpc_client::RpcClient;
 use solana_program::{msg, program_pack::Pack, pubkey::Pubkey, system_program, sysvar};
-use solana_sdk::{self, signature::Keypair, signature::Signer, transaction::Transaction};
+use solana_sdk::{
+    self, commitment_config::CommitmentConfig, signature::Keypair, signature::Signer,
+    transaction::Transaction,
+};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token;
 use token_vesting::{
@@ -87,7 +90,10 @@ fn command_create_svc(
     transaction.sign(&[&payer], recent_blockhash);
 
     rpc_client
-        .send_and_confirm_transaction(&transaction)
+        .send_and_confirm_transaction_with_spinner_and_commitment(
+            &transaction,
+            CommitmentConfig::finalized(),
+        )
         .unwrap();
 
     msg!("{:?}", Pubkey::new_from_array(vesting_seed))
