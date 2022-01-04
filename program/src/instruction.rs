@@ -232,7 +232,7 @@ impl VestingInstruction {
     }
 }
 
-// Creates a `Init` instruction
+// Creates a `Init` instruction to create and initialize the vesting token account.
 pub fn init(
     system_program_id: &Pubkey,
     rent_program_id: &Pubkey,

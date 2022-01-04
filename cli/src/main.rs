@@ -7,7 +7,7 @@ use solana_clap_utils::{
 };
 use solana_client::rpc_client::RpcClient;
 use solana_program::{msg, program_pack::Pack, pubkey::Pubkey, system_program, sysvar};
-use solana_sdk::{self, signature::Keypair, signature::Signer, transaction::Transaction};
+use solana_sdk::{self, signature::Keypair, signature::Signer, transaction::Transaction, commitment_config::CommitmentConfig};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token;
 use token_vesting::{
@@ -25,6 +25,7 @@ fn command_create_svc(
     destination_token_pubkey: Pubkey,
     mint_address: Pubkey,
     schedules: Vec<Schedule>,
+    confirm: bool,
 ) {
     // If no source token account was given, use the associated source account
     let source_token_pubkey = match possible_source_token_pubkey {
@@ -49,8 +50,7 @@ fn command_create_svc(
 
     let vesting_token_pubkey = get_associated_token_address(&vesting_pubkey, &mint_address);
 
-    let instructions = [
-        // Create and initiliaze the vesting token account
+    let instructions = [        
         init(
             &system_program::id(),
             &sysvar::rent::id(),
@@ -83,16 +83,26 @@ fn command_create_svc(
 
     let mut transaction = Transaction::new_with_payer(&instructions, Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
-
-    rpc_client.send_transaction(&transaction).unwrap();
 
     msg!(
         "\nThe seed of the contract is: {:?}",
         Pubkey::new_from_array(vesting_seed)
     );
+    msg!(
+        "The vesting account pubkey: {:?}",
+        vesting_pubkey,
+    );
+
     msg!("Please write it down as it is needed to interact with the contract.");
+
+    if confirm {
+        rpc_client.send_and_confirm_transaction_with_spinner_and_commitment(&transaction, CommitmentConfig::finalized()).unwrap();
+    }
+    else {
+        rpc_client.send_transaction(&transaction).unwrap();
+    }
 }
 
 fn command_unlock_svc(
@@ -125,7 +135,7 @@ fn command_unlock_svc(
 
     let mut transaction = Transaction::new_with_payer(&[unlock_instruction], Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(&[&payer], recent_blockhash);
 
     rpc_client.send_transaction(&transaction).unwrap();
@@ -168,7 +178,7 @@ fn command_change_destination(
 
     let mut transaction = Transaction::new_with_payer(&[unlock_instruction], Some(&payer.pubkey()));
 
-    let recent_blockhash = rpc_client.get_recent_blockhash().unwrap().0;
+    let recent_blockhash = rpc_client.get_latest_blockhash().unwrap();
     transaction.sign(
         &[&payer, &destination_token_account_owner],
         recent_blockhash,
@@ -248,7 +258,7 @@ fn main() {
                     "Specify the address (public key) of the program.",
                 ),
         )
-        .subcommand(SubCommand::with_name("create").about("Create a new vesting contract with an optionnal release schedule")        
+        .subcommand(SubCommand::with_name("create").about("Create a new vesting contract with an optional release schedule")        
             .arg(
                 Arg::with_name("mint_address")
                     .long("mint_address")
@@ -256,7 +266,7 @@ fn main() {
                     .validator(is_pubkey)
                     .takes_value(true)
                     .help(
-                        "Specify the adress (publickey) of the mint for the token that should be used.",
+                        "Specify the address (publickey) of the mint for the token that should be used.",
                     ),
             )
             .arg(
@@ -317,7 +327,7 @@ fn main() {
                     .allow_hyphen_values(true)
                     .help(
                         "Amounts of tokens to transfer via the vesting \
-                        contract. Multiple inputs seperated by a comma are
+                        contract. Multiple inputs separated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
                         needs to end with an exclamation mark ( e.g. 1,2,3,! )",
                     ),
@@ -334,7 +344,7 @@ fn main() {
                     .allow_hyphen_values(true)
                     .help(
                         "Release times in unix timestamp to decide when the contract is \
-                        unlockable. Multiple inputs seperated by a comma are
+                        unlockable. Multiple inputs separated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
                         needs to end with an exclamation mark ( e.g. 1,2,3,! ).",
                     ),
@@ -349,6 +359,16 @@ fn main() {
                         "Specify the transaction fee payer account address. \
                         This may be a keypair file, the ASK keyword. \
                         Defaults to the client keypair.",
+                    ),
+            )
+            .arg(
+                Arg::with_name("confirm")
+                    .long("confirm")
+                    .value_name("CONFIRM")
+                    .takes_value(true)
+                    .default_value("true")
+                    .help(
+                        "Specify whether to wait transaction confirmation"
                     ),
             )
         )
@@ -471,9 +491,10 @@ fn main() {
 
             // Parsing schedules
             let schedule_amounts: Vec<u64> = values_of(arg_matches, "amounts").unwrap();
+            let confirm: bool = value_of(arg_matches, "confirm").unwrap();
             let schedule_times: Vec<u64> = values_of(arg_matches, "release-times").unwrap();
             if schedule_amounts.len() != schedule_times.len() {
-                eprintln!("error: Number of amounts given is not equal to number of release heigts given.");
+                eprintln!("error: Number of amounts given is not equal to number of release heights given.");
                 std::process::exit(1);
             }
             let mut schedules: Vec<Schedule> = Vec::with_capacity(schedule_amounts.len());
@@ -493,6 +514,7 @@ fn main() {
                 destination_pubkey,
                 mint_address,
                 schedules,
+                confirm,
             )
         }
         ("unlock", Some(arg_matches)) => {
