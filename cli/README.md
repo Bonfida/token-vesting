@@ -102,6 +102,24 @@ unlock                                                          \
 --payer ~/.config/solana/id_owner.json" | bash
 ```
 
+Create linear vesting:
+```bash
+echo "RUST_BACKTRACE=1 ./target/debug/vesting-contract-cli      \
+--url https://api.devnet.solana.com                             \
+--program_id $PROGRAM_ID                                        \
+create                                                          \
+--mint_address $MINT                                            \
+--source_owner ~/.config/solana/id_owner.json                   \
+--source_token_address $TOKEN_ACCOUNT_SOURCE                    \
+--destination_token_address $ACCOUNT_TOKEN_DEST                 \
+--amounts 42,!                                                  \
+--release-frequency 'P1D'                                       \
+--start-date-time '2022-01-06T20:11:18Z'                        \
+--end-date-time '2022-01-12T20:11:18Z'                          \
+--payer ~/.config/solana/id_owner.json"                         \
+--verbose | bash 
+```
+
 ## Links
 
 https://spl.solana.com/token

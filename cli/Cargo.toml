@@ -13,3 +13,5 @@ token-vesting =  { version = "0.1.0", path="../program", features=["no-entrypoin
 spl-token = {version = "3.0.1", features = ["no-entrypoint"]}
 spl-associated-token-account = {version = "1.0.2", features = ["no-entrypoint"]}
 clap = "2.33.3"
+chrono = "0.4.19"
+iso8601-duration = { git = "https://github.com/rrichardson/iso8601-duration.git", rev = "9e01f51ea253e95e0fba5e4d7ad0c537922931e7"}

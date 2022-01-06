@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+use chrono::{DateTime, Duration};
 use clap::{
     crate_description, crate_name, crate_version, value_t, App, AppSettings, Arg, SubCommand,
 };
@@ -90,12 +92,12 @@ fn command_create_svc(
         "\nThe seed of the contract is: {:?}",
         Pubkey::new_from_array(vesting_seed)
     );
+    msg!("Please write it down as it is needed to interact with the contract!");
+
     msg!(
         "The vesting account pubkey: {:?}",
         vesting_pubkey,
     );
-
-    msg!("Please write it down as it is needed to interact with the contract.");
 
     if confirm {
         rpc_client.send_and_confirm_transaction_with_spinner_and_commitment(&transaction, CommitmentConfig::finalized()).unwrap();
@@ -332,9 +334,11 @@ fn main() {
                         needs to end with an exclamation mark ( e.g. 1,2,3,! )",
                     ),
             )
+            // scheduled vesting
             .arg(
                 Arg::with_name("release-times")
                     .long("release-times")
+                    .conflicts_with("release-frequency")
                     .value_name("SLOT")
                     .validator(is_slot)
                     .takes_value(true)
@@ -347,6 +351,46 @@ fn main() {
                         unlockable. Multiple inputs separated by a comma are
                         accepted for the creation of multiple schedules. The sequence of inputs \
                         needs to end with an exclamation mark ( e.g. 1,2,3,! ).",
+                    ),
+            )
+            // linear vesting
+            .arg(
+                Arg::with_name("release-frequency")
+                    .long("release-frequency")
+                    .value_name("RELEASE_FREQUENCY")
+                    .takes_value(true)
+                    .conflicts_with("release-times")                                        
+                    .help(
+                        "Frequency of release amount. \
+                        You start on 1sth of Nov and end on 5th of Nov. \
+                        With 1 day frequency it will vest from total amount 5 times \
+                        splitted linearly.
+                        Duration must be ISO8601 duration format. Example, P1D.
+                        Internally all dates will be transformed into schedule.",
+                    ),
+            )
+            .arg(                
+                Arg::with_name("start-date-time")
+                    .long("start-date-time")
+                    .value_name("START_DATE_TIME")
+                    .takes_value(true)
+                    .help(
+                        "First time of release in linear vesting. \
+                        Must be RFC 3339 and ISO 8601 sortable date time. \
+                        Example, 2022-01-06T20:11:18Z",
+                    ),
+            )
+            .arg(
+                Arg::with_name("end-date-time")
+                    .long("end-date-time")
+                    .value_name("END_DATE_TIME")
+                    .takes_value(true)
+                    .help(
+                        "Last time of release in linear vesting. \
+                        If frequency will go over last release time, \
+                        tokens will be released later than end date. 
+                        Must be RFC 3339 and ISO 8601 sortable date time. \
+                        Example, 2022-17-06T20:11:18Z",
                     ),
             )
             .arg(
@@ -490,9 +534,40 @@ fn main() {
             let payer_keypair = keypair_of(arg_matches, "payer").unwrap();
 
             // Parsing schedules
-            let schedule_amounts: Vec<u64> = values_of(arg_matches, "amounts").unwrap();
+            let mut schedule_amounts: Vec<u64> = values_of(arg_matches, "amounts").unwrap();
             let confirm: bool = value_of(arg_matches, "confirm").unwrap();
-            let schedule_times: Vec<u64> = values_of(arg_matches, "release-times").unwrap();
+            let release_frequency: Option<String> = value_of(arg_matches, "release-frequency");
+            
+            let schedule_times = if release_frequency.is_some() {
+                // best found in rust
+                let release_frequency: iso8601_duration::Duration = release_frequency.unwrap().parse().unwrap();
+                let release_frequency:u64  = Duration::from_std(release_frequency.to_std()).unwrap().num_seconds().try_into().unwrap();
+                if schedule_amounts.len() > 1 {
+                    panic!("Linear vesting must have one amount which will split into parts per period")
+                }                                
+                let mut start:u64 = DateTime::parse_from_rfc3339(&value_of::<String>(arg_matches, "start-date-time").unwrap()).unwrap().timestamp().try_into().unwrap();
+                let end:u64 = DateTime::parse_from_rfc3339(&value_of::<String>(arg_matches, "end-date-time").unwrap()).unwrap().timestamp().try_into().unwrap();
+                let total = schedule_amounts[0];
+                let part = total * release_frequency / (end - start);
+                schedule_amounts.clear();
+                let mut linear_vesting = Vec::new();                
+                linear_vesting.push(start);
+                schedule_amounts.push(part);
+                while start < end {
+                    start += release_frequency;
+                    linear_vesting.push(start);
+                    schedule_amounts.push(part);
+                    
+                }
+                if linear_vesting.len() > 365 {
+                    panic!("Total count of vesting periods is more than 365. Not sure if you want to do that.")
+                }
+                linear_vesting
+            }
+            else {
+                values_of(arg_matches, "release-times").unwrap()
+            };
+   
             if schedule_amounts.len() != schedule_times.len() {
                 eprintln!("error: Number of amounts given is not equal to number of release heights given.");
                 std::process::exit(1);
