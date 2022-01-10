@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use chrono::{DateTime, Duration};
 use clap::{
     crate_description, crate_name, crate_version, value_t, App, AppSettings, Arg, SubCommand,
@@ -9,9 +8,13 @@ use solana_clap_utils::{
 };
 use solana_client::rpc_client::RpcClient;
 use solana_program::{msg, program_pack::Pack, pubkey::Pubkey, system_program, sysvar};
-use solana_sdk::{self, signature::Keypair, signature::Signer, transaction::Transaction, commitment_config::CommitmentConfig};
+use solana_sdk::{
+    self, commitment_config::CommitmentConfig, signature::Keypair, signature::Signer,
+    transaction::Transaction,
+};
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token;
+use std::convert::TryInto;
 use token_vesting::{
     instruction::{change_destination, create, init, unlock, Schedule},
     state::{unpack_schedules, VestingScheduleHeader},
@@ -52,7 +55,7 @@ fn command_create_svc(
 
     let vesting_token_pubkey = get_associated_token_address(&vesting_pubkey, &mint_address);
 
-    let instructions = [        
+    let instructions = [
         init(
             &system_program::id(),
             &sysvar::rent::id(),
@@ -94,15 +97,16 @@ fn command_create_svc(
     );
     msg!("Please write it down as it is needed to interact with the contract!");
 
-    msg!(
-        "The vesting account pubkey: {:?}",
-        vesting_pubkey,
-    );
+    msg!("The vesting account pubkey: {:?}", vesting_pubkey,);
 
     if confirm {
-        rpc_client.send_and_confirm_transaction_with_spinner_and_commitment(&transaction, CommitmentConfig::finalized()).unwrap();
-    }
-    else {
+        rpc_client
+            .send_and_confirm_transaction_with_spinner_and_commitment(
+                &transaction,
+                CommitmentConfig::finalized(),
+            )
+            .unwrap();
+    } else {
         rpc_client.send_transaction(&transaction).unwrap();
     }
 }
@@ -369,7 +373,7 @@ fn main() {
                         Internally all dates will be transformed into schedule.",
                     ),
             )
-            .arg(                
+            .arg(
                 Arg::with_name("start-date-time")
                     .long("start-date-time")
                     .value_name("START_DATE_TIME")
@@ -537,37 +541,61 @@ fn main() {
             let mut schedule_amounts: Vec<u64> = values_of(arg_matches, "amounts").unwrap();
             let confirm: bool = value_of(arg_matches, "confirm").unwrap();
             let release_frequency: Option<String> = value_of(arg_matches, "release-frequency");
-            
+
             let schedule_times = if release_frequency.is_some() {
                 // best found in rust
-                let release_frequency: iso8601_duration::Duration = release_frequency.unwrap().parse().unwrap();
-                let release_frequency:u64  = Duration::from_std(release_frequency.to_std()).unwrap().num_seconds().try_into().unwrap();
+                let release_frequency: iso8601_duration::Duration =
+                    release_frequency.unwrap().parse().unwrap();
+                let release_frequency: u64 = Duration::from_std(release_frequency.to_std())
+                    .unwrap()
+                    .num_seconds()
+                    .try_into()
+                    .unwrap();
                 if schedule_amounts.len() > 1 {
                     panic!("Linear vesting must have one amount which will split into parts per period")
-                }                                
-                let mut start:u64 = DateTime::parse_from_rfc3339(&value_of::<String>(arg_matches, "start-date-time").unwrap()).unwrap().timestamp().try_into().unwrap();
-                let end:u64 = DateTime::parse_from_rfc3339(&value_of::<String>(arg_matches, "end-date-time").unwrap()).unwrap().timestamp().try_into().unwrap();
+                }
+                let start: u64 = DateTime::parse_from_rfc3339(
+                    &value_of::<String>(arg_matches, "start-date-time").unwrap(),
+                )
+                .unwrap()
+                .timestamp()
+                .try_into()
+                .unwrap();
+                let end: u64 = DateTime::parse_from_rfc3339(
+                    &value_of::<String>(arg_matches, "end-date-time").unwrap(),
+                )
+                .unwrap()
+                .timestamp()
+                .try_into()
+                .unwrap();
                 let total = schedule_amounts[0];
                 let part = total * release_frequency / (end - start);
                 schedule_amounts.clear();
-                let mut linear_vesting = Vec::new();                
-                linear_vesting.push(start);
-                schedule_amounts.push(part);
-                while start < end {
-                    start += release_frequency;
-                    linear_vesting.push(start);
+                let mut linear_vesting = Vec::new();
+
+                let q = total / part;
+                let r = total % part;
+
+                for n in 0..q {
+                    linear_vesting.push(start + n * release_frequency);
                     schedule_amounts.push(part);
-                    
                 }
+
+                if r != 0 {
+                    schedule_amounts[(q - 1) as usize] += r;
+                }
+
                 if linear_vesting.len() > 365 {
                     panic!("Total count of vesting periods is more than 365. Not sure if you want to do that.")
                 }
+
+                assert_eq!(schedule_amounts.iter().sum::<u64>(), total);
+
                 linear_vesting
-            }
-            else {
+            } else {
                 values_of(arg_matches, "release-times").unwrap()
             };
-   
+
             if schedule_amounts.len() != schedule_times.len() {
                 eprintln!("error: Number of amounts given is not equal to number of release heights given.");
                 std::process::exit(1);
