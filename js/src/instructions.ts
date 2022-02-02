@@ -118,6 +118,7 @@ export function createUnlockInstruction(
   vestingAccountKey: PublicKey,
   vestingTokenAccountKey: PublicKey,
   destinationTokenAccountKey: PublicKey,
+  recoverTokenAccountKey: PublicKey,
   seeds: Array<Buffer | Uint8Array>,
 ): TransactionInstruction {
   const data = Buffer.concat([
@@ -135,6 +136,11 @@ export function createUnlockInstruction(
       pubkey: clockSysvarId,
       isSigner: false,
       isWritable: false,
+    },
+    {
+      pubkey: recoverTokenAccountKey,
+      isSigner: false,
+      isWritable: true,
     },
     {
       pubkey: vestingAccountKey,

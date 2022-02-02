@@ -107,6 +107,7 @@ export async function unlock(
   programId: PublicKey,
   seedWord: Buffer | Uint8Array,
   mintAddress: PublicKey,
+  recoverTokenAccountAddress: PublicKey,
 ): Promise<Array<TransactionInstruction>> {
   seedWord = seedWord.slice(0, 31);
   const [vestingAccountKey, bump] = await PublicKey.findProgramAddress(
@@ -130,6 +131,7 @@ export async function unlock(
       vestingAccountKey,
       vestingTokenAccountKey,
       vestingInfo.destinationAddress,
+      recoverTokenAccountAddress,
       [seedWord],
     ),
   ];
