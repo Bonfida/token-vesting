@@ -569,7 +569,10 @@ fn main() {
                 .try_into()
                 .unwrap();
                 let total = schedule_amounts[0];
-                let part = total * release_frequency / (end - start);
+                let part = (((total as u128) * (release_frequency as u128))
+                    / ((end - start) as u128))
+                    .try_into()
+                    .unwrap();
                 schedule_amounts.clear();
                 let mut linear_vesting = Vec::new();
 
