@@ -4,9 +4,16 @@ This code has been audited by Kudelski ✅
 
 # Token vesting contract
 
+## Program ID
+
+- mainnet: `CChTq6PthWU82YZkbveA3WDf7s97BWhBK4Vx9bmsT743`
+- devnet: `DLxB9dSQtA4WJ49hWFhxqiQkD9v6m67Yfk9voxpxrBs4`
+
 ## UI
 
 [Bonfida Token Vesting UI](https://vesting.bonfida.com)
+
+The UI **only** works for vesting accounts using the mainnet deployment `CChTq6PthWU82YZkbveA3WDf7s97BWhBK4Vx9bmsT743`
 
 ## Goal
 
