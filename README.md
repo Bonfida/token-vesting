@@ -3,7 +3,19 @@
 <p align="center">
 <img width="250" src="https://ftx.com/static/media/fida.ce20eedf.svg"/>
 </p>
+<p align="center">
+<a href="https://twitter.com/bonfida">
+<img src="https://img.shields.io/twitter/url?label=Bonfida&style=social&url=https%3A%2F%2Ftwitter.com%2Fbonfida">
+</a>
+</p>
+
 <br />
+
+<div align="center">
+<img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" />
+<img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
+
+</div>
 
 <br />
 <h2 align="center">Table of contents</h2>
