@@ -94,8 +94,10 @@ const lock = async () => {
     schedules.push(
       new Schedule(
         /** Has to be in seconds */
+        // @ts-ignore
         new Numberu64(date.getTime() / 1_000),
         /** Don't forget to add decimals */
+        // @ts-ignore
         new Numberu64(AMOUNT_PER_SCHEDULE * Math.pow(10, DECIMALS)),
       ),
     );
@@ -124,19 +126,18 @@ const lock = async () => {
   );
 
   console.log(`Transaction: ${tx}`);
-  
+
   //waiting for tx confirmation
   await new Promise(f => setTimeout(f, 60000));
 
   //get seed for official bonfida UI
-  const txInfo = await connection.getConfirmedTransaction(tx,"confirmed")
+  const txInfo = await connection.getConfirmedTransaction(tx, 'confirmed');
   if (txInfo && !txInfo.meta?.err) {
     console.log(
-      txInfo?.transaction.instructions[2].data.slice(1, 32 + 1).toString("hex")
+      txInfo?.transaction.instructions[2].data.slice(1, 32 + 1).toString('hex'),
     );
-  }
-  else{
-    throw new Error('Transaction not confirmed.')
+  } else {
+    throw new Error('Transaction not confirmed.');
   }
 };
 

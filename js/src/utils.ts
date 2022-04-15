@@ -1,19 +1,12 @@
-// @ts-nocheck
 import BN from 'bn.js';
-import assert from 'assert';
-import nacl from 'tweetnacl';
-import * as bip32 from 'bip32';
 import {
   Keypair,
-  Account,
   Connection,
   Transaction,
   TransactionInstruction,
   PublicKey,
-  TransactionInstruction,
   SYSVAR_RENT_PUBKEY,
 } from '@solana/web3.js';
-import { Schedule } from './state';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 export async function findAssociatedTokenAddress(
@@ -42,7 +35,9 @@ export class Numberu64 extends BN {
     if (b.length === 8) {
       return b;
     }
-    assert(b.length < 8, 'Numberu64 too large');
+    if (b.length > 8) {
+      throw new Error('Numberu64 too large');
+    }
 
     const zeroPad = Buffer.alloc(8);
     b.copy(zeroPad);
@@ -53,7 +48,10 @@ export class Numberu64 extends BN {
    * Construct a Numberu64 from Buffer representation
    */
   static fromBuffer(buffer): any {
-    assert(buffer.length === 8, `Invalid buffer length: ${buffer.length}`);
+    if (buffer.length !== 8) {
+      throw new Error(`Invalid buffer length: ${buffer.length}`);
+    }
+
     return new BN(
       [...buffer]
         .reverse()
@@ -74,7 +72,9 @@ export class Numberu32 extends BN {
     if (b.length === 4) {
       return b;
     }
-    assert(b.length < 4, 'Numberu32 too large');
+    if (b.length > 4) {
+      throw new Error('Numberu32 too large');
+    }
 
     const zeroPad = Buffer.alloc(4);
     b.copy(zeroPad);
@@ -85,7 +85,10 @@ export class Numberu32 extends BN {
    * Construct a Numberu32 from Buffer representation
    */
   static fromBuffer(buffer): any {
-    assert(buffer.length === 4, `Invalid buffer length: ${buffer.length}`);
+    if (buffer.length !== 4) {
+      throw new Error(`Invalid buffer length: ${buffer.length}`);
+    }
+
     return new BN(
       [...buffer]
         .reverse()
@@ -104,20 +107,6 @@ const ENDPOINTS = {
 };
 
 export const connection = new Connection(ENDPOINTS.devnet);
-
-// For accounts imported from Sollet.io
-
-export const getDerivedSeed = (seed: Buffer): Uint8Array => {
-  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
-    .privateKey;
-  return nacl.sign.keyPair.fromSeed(derivedSeed).secretKey;
-};
-
-export const getAccountFromSeed = (seed: Buffer): Account => {
-  const derivedSeed = bip32.fromSeed(seed).derivePath(`m/501'/0'/0/0`)
-    .privateKey;
-  return new Account(nacl.sign.keyPair.fromSeed(derivedSeed).secretKey);
-};
 
 export const ASSOCIATED_TOKEN_PROGRAM_ID: PublicKey = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
