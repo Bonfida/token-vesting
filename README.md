@@ -1,7 +1,7 @@
 <h1 align="center">Token vesting</h1>
 <br />
 <p align="center">
-<img width="250" src="https://ftx.com/static/media/fida.ce20eedf.svg"/>
+<img width="250" src="https://i.imgur.com/nn7LMNV.png"/>
 </p>
 <p align="center">
 <a href="https://twitter.com/bonfida">
