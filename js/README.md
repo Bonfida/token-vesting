@@ -1,8 +1,10 @@
-# Simple JS binding
+# Simple JS bindings
+
+## Example
+
+A linear unlock example can be found in `example.ts`
 
 ## Quickstart
-
-Run `yarn` in the `js` directory to install the node modules. Run `yarn dev` to get started and `yarn build` to build.
 
 Contract address on Devnet
 
@@ -10,7 +12,11 @@ Contract address on Devnet
 DLxB9dSQtA4WJ49hWFhxqiQkD9v6m67Yfk9voxpxrBs4
 ```
 
-See on the [Solana Explorer](https://explorer.solana.com/address/Hj9R6bEfrULLNrApMsKCEaHR9QJ2JgRtM381xgYcjFmQ?cluster=devnet)
+Contract address on Mainnet
+
+```
+CChTq6PthWU82YZkbveA3WDf7s97BWhBK4Vx9bmsT743
+```
 
 The code allows you to
 

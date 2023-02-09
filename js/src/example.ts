@@ -1,12 +1,9 @@
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import fs from 'fs';
-import {
-  Numberu64,
-  generateRandomSeed,
-  signTransactionInstructions,
-} from './utils';
+import { Numberu64, generateRandomSeed } from './utils';
 import { Schedule } from './state';
 import { create, TOKEN_VESTING_PROGRAM_ID } from './main';
+import { signAndSendInstructions } from '@bonfida/utils';
 
 /**
  *
@@ -118,19 +115,10 @@ const lock = async () => {
     schedules,
   );
 
-  const tx = await signTransactionInstructions(
-    connection,
-    [wallet],
-    wallet.publicKey,
-    instruction,
-  );
+  const tx = await signAndSendInstructions(connection, [], wallet, instruction);
 
   console.log(`Transaction: ${tx}`);
 
-  //waiting for tx confirmation
-  await new Promise(f => setTimeout(f, 60000));
-
-  //get seed for official bonfida UI
   const txInfo = await connection.getConfirmedTransaction(tx, 'confirmed');
   if (txInfo && !txInfo.meta?.err) {
     console.log(

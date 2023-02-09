@@ -5,12 +5,13 @@
       "module": "commonjs",
       "baseUrl": "./",
       "paths": {
-          "*" : ["types/*"]
+        "*": ["types/*"]
       }
     }
   },
   "compilerOptions": {
-    "module": "commonjs",
+    "allowJs": true,
+    "module": "esnext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2019",
@@ -19,13 +20,10 @@
     "declaration": true,
     "noImplicitAny": false,
     "moduleResolution": "node",
-    "sourceMap": true,
+    "sourceMap": false,
     "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*", "src/types/*"]
-    },
     "resolveJsonModule": true
   },
-  "include": ["src/*"],
-  "exclude": ["src/**/*.test.ts", "**/node_modules", "dist"]
+  "include": ["src/*", "src/.ts"],
+  "exclude": ["**/node_modules", "dist", "tests", "src/example.ts"]
 }
