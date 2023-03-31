@@ -205,12 +205,8 @@ conditions.
 
 #### Author 
 
-RaDzikalbonie.
+RaDzikalbonie
 
-##### Verify 
+##### Deploy 
 
-Yes.
-
-###### Sign
-
-RaDzikalbonie.
+RaDzikalbonie
