@@ -1,0 +1,43 @@
+name: IDLs
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+      - name: Yarn Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
+
+      - run: yarn install
+      - run: yarn generate-index
+      - run: cp README-index.md index/README.md
+      - run: cp LICENSE.txt index/
+      - name: Upload
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          deploy_key: ${{ secrets.IDL_DEPLOY_KEY }}
+          external_repository: DeployDAO/solana-program-index
+          exclude_assets: ""
+          publish_branch: master
+          publish_dir: ./index/
+
+[![Checks](https://github.com/DeployDAO/solana-program-registry/actions/workflows/check.yml/badge.svg?event=pull_request)](https://github.com/DeployDAO/solana-program-registry/actions/workflows/check.yml)
