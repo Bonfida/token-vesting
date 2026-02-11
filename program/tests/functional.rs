@@ -1,17 +1,36 @@
 #![cfg(feature = "test-bpf")]
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::str::FromStr;
 
-use solana_program::{hash::Hash,
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    hash::Hash,
     pubkey::Pubkey,
     rent::Rent,
     sysvar,
     system_program
 };
 use solana_program_test::{processor, ProgramTest};
-use solana_sdk::{account::Account, keyed_account, signature::Keypair, signature::Signer, system_instruction, transaction::Transaction};
+use solana_sdk::{
+    account::Account,
+    instruction::InstructionError,
+    keyed_account,
+    signature::Keypair,
+    signature::Signer,
+    system_instruction,
+    transaction::{Transaction, TransactionError},
+};
 use token_vesting::{entrypoint::process_instruction, instruction::Schedule};
 use token_vesting::instruction::{init, unlock, change_destination, create};
 use spl_token::{self, instruction::{initialize_mint, initialize_account, mint_to}};
+
+static MALICIOUS_INVOKES: AtomicUsize = AtomicUsize::new(0);
+
+fn malicious_token_program(_program_id: &Pubkey, _accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
+    MALICIOUS_INVOKES.fetch_add(1, Ordering::SeqCst);
+    Ok(())
+}
 
 #[tokio::test]
 async fn test_token_vesting() {
@@ -195,6 +214,154 @@ async fn test_token_vesting() {
 
     banks_client.process_transaction(change_destination_transaction).await.unwrap();
     
+}
+
+#[tokio::test]
+async fn test_create_rejects_invalid_token_program() {
+    MALICIOUS_INVOKES.store(0, Ordering::SeqCst);
+
+    let program_id = Pubkey::from_str("VestingbGKPFXCWuBvfkegQfZyiNwAJb9Ss623VQ5DA").unwrap();
+    let malicious_program_id = Pubkey::new_unique();
+
+    let mint_authority = Keypair::new();
+    let mint = Keypair::new();
+
+    let source_account = Keypair::new();
+    let source_token_account = Keypair::new();
+
+    let destination_account = Keypair::new();
+    let destination_token_account = Keypair::new();
+
+    let mut seeds = [42u8; 32];
+    let (vesting_account_key, bump) = Pubkey::find_program_address(&[&seeds[..31]], &program_id);
+    seeds[31] = bump;
+    let vesting_token_account = Keypair::new();
+
+    let mut program_test = ProgramTest::new(
+        "token_vesting",
+        program_id,
+        processor!(process_instruction),
+    );
+
+    program_test.add_program(
+        "malicious_token_program",
+        malicious_program_id,
+        processor!(malicious_token_program),
+    );
+
+    program_test.add_account(
+        source_account.pubkey(),
+        Account {
+            lamports: 5000000,
+            ..Account::default()
+        },
+    );
+
+    let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
+
+    // init vesting PDA account
+    let init_instruction = [init(
+        &system_program::id(),
+        &sysvar::rent::id(),
+        &program_id,
+        &payer.pubkey(),
+        &vesting_account_key,
+        seeds,
+        1,
+    )
+    .unwrap()];
+    let mut init_transaction = Transaction::new_with_payer(&init_instruction, Some(&payer.pubkey()));
+    init_transaction.partial_sign(&[&payer], recent_blockhash);
+    banks_client.process_transaction(init_transaction).await.unwrap();
+
+    // mint + token accounts
+    banks_client
+        .process_transaction(mint_init_transaction(
+            &payer,
+            &mint,
+            &mint_authority,
+            recent_blockhash,
+        ))
+        .await
+        .unwrap();
+
+    banks_client
+        .process_transaction(create_token_account(
+            &payer,
+            &mint,
+            recent_blockhash,
+            &source_token_account,
+            &source_account.pubkey(),
+        ))
+        .await
+        .unwrap();
+    banks_client
+        .process_transaction(create_token_account(
+            &payer,
+            &mint,
+            recent_blockhash,
+            &vesting_token_account,
+            &vesting_account_key,
+        ))
+        .await
+        .unwrap();
+    banks_client
+        .process_transaction(create_token_account(
+            &payer,
+            &mint,
+            recent_blockhash,
+            &destination_token_account,
+            &destination_account.pubkey(),
+        ))
+        .await
+        .unwrap();
+
+    // fund source token account so pre-invoke checks pass
+    let setup_instructions = [mint_to(
+        &spl_token::id(),
+        &mint.pubkey(),
+        &source_token_account.pubkey(),
+        &mint_authority.pubkey(),
+        &[],
+        100,
+    )
+    .unwrap()];
+    let mut setup_transaction =
+        Transaction::new_with_payer(&setup_instructions, Some(&payer.pubkey()));
+    setup_transaction.partial_sign(&[&payer, &mint_authority], recent_blockhash);
+    banks_client.process_transaction(setup_transaction).await.unwrap();
+
+    // Attempt create with a malicious program id in place of the SPL token program.
+    let schedules = vec![Schedule {
+        amount: 1,
+        release_time: 0,
+    }];
+
+    let create_ix = create(
+        &program_id,
+        &malicious_program_id,
+        &vesting_account_key,
+        &vesting_token_account.pubkey(),
+        &source_account.pubkey(),
+        &source_token_account.pubkey(),
+        &destination_token_account.pubkey(),
+        &mint.pubkey(),
+        schedules,
+        seeds,
+    )
+    .unwrap();
+
+    let mut tx = Transaction::new_with_payer(&[create_ix], Some(&payer.pubkey()));
+    tx.partial_sign(&[&payer, &source_account], recent_blockhash);
+
+    let err = banks_client.process_transaction(tx).await.unwrap_err();
+    assert_eq!(
+        err.unwrap(),
+        TransactionError::InstructionError(0, InstructionError::InvalidArgument)
+    );
+
+    // Regression: ensure we never invoked the malicious program.
+    assert_eq!(MALICIOUS_INVOKES.load(Ordering::SeqCst), 0);
 }
 
 fn mint_init_transaction(

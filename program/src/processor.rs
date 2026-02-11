@@ -85,6 +85,11 @@ impl Processor {
         let source_token_account_owner = next_account_info(accounts_iter)?;
         let source_token_account = next_account_info(accounts_iter)?;
 
+        if spl_token_account.key != &spl_token::id() {
+            msg!("The provided spl token program account is invalid");
+            return Err(ProgramError::InvalidArgument);
+        }
+
         let vesting_account_key = Pubkey::create_program_address(&[&seeds], program_id)?;
         if vesting_account_key != *vesting_account.key {
             msg!("Provided vesting account is invalid");
